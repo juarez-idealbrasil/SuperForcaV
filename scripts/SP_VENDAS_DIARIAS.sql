@@ -1,0 +1,44 @@
+SET TERM ^ ;
+
+CREATE OR ALTER procedure SP_VENDAS_DIARIAS (
+    P_ID_EMPRESA integer,
+    P_DATA_INI date,
+    P_DATA_FIM date,
+    P_ID_REPRESENTANTE integer,
+    P_ID_EQUIPE integer,
+    P_ID_CLIENTE integer)
+returns (
+    DATA_VENDA date,
+    VALOR_TOTAL numeric(18,2),
+    QUANTIDADE_VENDAS integer)
+as
+BEGIN
+  FOR
+    SELECT P.EMISSAO AS DATA_VENDA,
+           SUM(P.TOTAL_NEG) AS VALOR_TOTAL,
+           COUNT(P.ID_PED) AS QUANTIDADE_VENDAS
+      FROM PEDIDO P
+     WHERE P.ID_EMP = :P_ID_EMPRESA
+       AND P.EMISSAO >= :P_DATA_INI
+       AND P.EMISSAO <= :P_DATA_FIM
+       AND P.STATUS IN (1,2)
+       AND P.ID_COP = 1
+       AND (:P_ID_REPRESENTANTE = 0 OR P.ID_REP = :P_ID_REPRESENTANTE)
+       AND (:P_ID_CLIENTE = 0 OR P.ID_PES = :P_ID_CLIENTE)
+       AND (:P_ID_EQUIPE = 0 OR EXISTS (
+           SELECT 1
+             FROM REPRES R
+            WHERE R.ID_PES = P.ID_REP
+              AND R.ID_EQU = :P_ID_EQUIPE))
+     GROUP BY P.EMISSAO
+     ORDER BY 1
+      INTO :DATA_VENDA,
+           :VALOR_TOTAL,
+           :QUANTIDADE_VENDAS
+  DO
+  BEGIN
+    SUSPEND;
+  END
+END;^
+
+SET TERM ; ^

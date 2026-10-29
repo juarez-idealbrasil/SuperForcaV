@@ -1,0 +1,318 @@
+:root {
+    color-scheme: light;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #19352c;
+    background: #f3f7f5;
+    font-synthesis: none;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-width: 320px;
+    min-height: 100vh;
+    background: #f3f7f5;
+}
+
+button,
+input {
+    font: inherit;
+}
+
+.mobile-page {
+    padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom);
+}
+
+.auth-shell {
+    width: 100%;
+    max-width: 420px;
+    min-height: 100vh;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 28px 0;
+}
+
+.auth-card,
+.goal-card,
+.metric-card,
+.welcome-panel {
+    background: #fff;
+    border: 1px solid #e3ece7;
+    border-radius: 18px;
+    box-shadow: 0 8px 24px rgba(25, 53, 44, 0.06);
+}
+
+.auth-card {
+    padding: 30px 24px;
+}
+
+.brand-mark {
+    width: 52px;
+    height: 52px;
+    display: grid;
+    place-items: center;
+    border-radius: 16px;
+    background: #145c46;
+    color: #fff;
+    font-size: 19px;
+    font-weight: 800;
+}
+
+.eyebrow {
+    margin: 0 0 8px;
+    color: #43856d;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.auth-card .eyebrow {
+    margin-top: 24px;
+}
+
+h1,
+h2,
+p {
+    margin-top: 0;
+}
+
+.auth-card h1,
+.mobile-header h1 {
+    margin-bottom: 8px;
+    font-size: 26px;
+}
+
+.muted,
+.welcome-panel p:last-child {
+    color: #6a7d74;
+}
+
+.auth-card form {
+    display: grid;
+    gap: 10px;
+    margin-top: 26px;
+}
+
+.auth-card label {
+    margin-top: 8px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.auth-card input {
+    width: 100%;
+    min-height: 50px;
+    padding: 0 14px;
+    border: 1px solid #cbd9d2;
+    border-radius: 10px;
+    background: #fff;
+}
+
+.auth-card input:focus {
+    outline: 3px solid rgba(20, 92, 70, 0.16);
+    border-color: #28785d;
+}
+
+.primary-button,
+.logout-button {
+    min-height: 48px;
+    border: 0;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.primary-button {
+    margin-top: 14px;
+    background: #145c46;
+    color: #fff;
+}
+
+.primary-button:active {
+    background: #0e4937;
+}
+
+.alert {
+    margin-top: 18px;
+    padding: 12px;
+    border: 1px solid #f2c4c2;
+    border-radius: 10px;
+    background: #fff2f1;
+    color: #9d302a;
+    font-size: 14px;
+}
+
+.page-note,
+.mobile-footer {
+    margin: 18px 0 0;
+    color: #82928a;
+    font-size: 12px;
+    text-align: center;
+}
+
+.mobile-header {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 24px 0 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.mobile-header .eyebrow {
+    margin-bottom: 5px;
+}
+
+.mobile-header h1 {
+    margin-bottom: 0;
+    overflow-wrap: anywhere;
+}
+
+.logout-button {
+    min-width: 64px;
+    padding: 0 16px;
+    background: #e4eee9;
+    color: #145c46;
+}
+
+.dashboard-content {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.welcome-panel {
+    padding: 22px;
+    background: #145c46;
+    color: #fff;
+}
+
+.welcome-panel .eyebrow {
+    color: #b4e0cb;
+}
+
+.welcome-panel h2 {
+    margin-bottom: 7px;
+    font-size: 21px;
+}
+
+.welcome-panel p:last-child {
+    margin-bottom: 0;
+    color: #d8ebe2;
+    font-size: 14px;
+}
+
+.metric-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 14px;
+}
+
+.metric-card {
+    min-height: 132px;
+    padding: 17px;
+    border-top: 4px solid #145c46;
+}
+
+.metric-card span,
+.metric-card small {
+    display: block;
+    color: #6a7d74;
+    font-size: 12px;
+}
+
+.metric-card strong {
+    display: block;
+    margin: 12px 0 6px;
+    overflow-wrap: anywhere;
+    font-size: clamp(17px, 5vw, 22px);
+}
+
+.metric-card small {
+    font-size: 11px;
+}
+
+.metric-blue {
+    border-top-color: #3982bd;
+}
+
+.metric-orange {
+    border-top-color: #e5a43b;
+}
+
+.metric-red {
+    border-top-color: #cb6258;
+}
+
+.goal-card {
+    margin-top: 14px;
+    padding: 20px;
+}
+
+.goal-heading,
+.goal-values {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.goal-heading h2 {
+    margin-bottom: 0;
+    font-size: 18px;
+}
+
+.goal-heading strong {
+    color: #145c46;
+    font-size: 24px;
+}
+
+.progress-track {
+    height: 12px;
+    margin: 19px 0 12px;
+    overflow: hidden;
+    border-radius: 99px;
+    background: #e6eee9;
+}
+
+.progress-track span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: #32a276;
+}
+
+.goal-values {
+    align-items: flex-start;
+    color: #6a7d74;
+    font-size: 11px;
+}
+
+.mobile-footer {
+    max-width: 900px;
+    margin: 24px auto 12px;
+}
+
+@media (min-width: 700px) {
+    .mobile-page {
+        padding-right: 24px;
+        padding-left: 24px;
+    }
+
+    .metric-grid {
+        gap: 16px;
+        margin-top: 18px;
+    }
+
+    .metric-card {
+        padding: 22px;
+    }
+}

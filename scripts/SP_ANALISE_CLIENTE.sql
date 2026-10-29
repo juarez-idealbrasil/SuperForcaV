@@ -1,0 +1,53 @@
+SET TERM ^ ;
+
+CREATE OR ALTER procedure SP_ANALISE_CLIENTE (
+    P_ID_EMPRESA integer,
+    P_DATA_INI date,
+    P_DATA_FIM date,
+    P_ID_REPRESENTANTE integer,
+    P_ID_EQUIPE integer,
+    P_ID_CLIENTE integer)
+returns (
+    CLIENTE_ID integer,
+    CLIENTE_NOME varchar(100),
+    VALOR_TOTAL numeric(18,2),
+    QUANTIDADE_VENDAS integer,
+    TICKET_MEDIO numeric(18,2))
+as
+BEGIN
+  FOR
+    SELECT FIRST 50
+           PE.ID_PES AS CLIENTE_ID,
+           PE.RAZ_SOC AS CLIENTE_NOME,
+           SUM(P.TOTAL_NEG) AS VALOR_TOTAL,
+           COUNT(ID_PED) AS QUANTIDADE_COMPRAS,
+           ROUND(SUM(P.TOTAL_NEG) / COUNT(ID_PED), 2) AS TICKET_MEDIO
+      FROM PEDIDO P
+      JOIN PESSOA PE ON (P.ID_PES = PE.ID_PES)
+     WHERE P.ID_EMP = :P_ID_EMPRESA
+         AND P.EMISSAO >= :P_DATA_INI
+         AND P.EMISSAO <= :P_DATA_FIM
+       AND P.STATUS IN (1,2)
+       AND P.ID_COP = 1
+       AND PE.TIPO_PESSOA = 0
+       AND (:P_ID_REPRESENTANTE = 0 OR P.ID_REP = :P_ID_REPRESENTANTE)
+       AND (:P_ID_CLIENTE = 0 OR P.ID_PES = :P_ID_CLIENTE)
+       AND (:P_ID_EQUIPE = 0 OR EXISTS (
+           SELECT 1
+             FROM REPRES R
+            WHERE R.ID_PES = P.ID_REP
+              AND R.ID_EQU = :P_ID_EQUIPE))
+     GROUP BY PE.ID_PES,  PE.RAZ_SOC
+     ORDER BY 3 DESC
+      INTO :CLIENTE_ID,
+           :CLIENTE_NOME,
+           :VALOR_TOTAL,
+           :QUANTIDADE_VENDAS,
+           :TICKET_MEDIO
+  DO
+  BEGIN
+    SUSPEND;
+  END
+END^
+
+SET TERM ; ^

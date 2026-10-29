@@ -1,0 +1,39 @@
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+$active_group = parse_url($_SERVER['HTTP_HOST'], PHP_URL_PORT);
+$query_builder = FALSE;
+
+$dbHost = getenv('FORCAVWS_DB_HOST');
+$dbUsername = getenv('FORCAVWS_DB_USERNAME');
+$dbPassword = getenv('FORCAVWS_DB_PASSWORD');
+
+$databasePaths = array(
+    '2222' => getenv('FORCAVWS_DB_2222_PATH'),
+    '3333' => getenv('FORCAVWS_DB_3333_PATH'),
+    '4444' => getenv('FORCAVWS_DB_4444_PATH')
+);
+
+foreach ($databasePaths as $port => $databasePath) {
+    $db[$port] = array(
+        'dsn' => '',
+        'hostname' => $dbHost === FALSE ? 'localhost' : $dbHost,
+        'username' => $dbUsername === FALSE ? '' : $dbUsername,
+        'password' => $dbPassword === FALSE ? '' : $dbPassword,
+        'database' => $databasePath === FALSE ? '' : $databasePath,
+        'dbdriver' => 'ibase',
+        'dbprefix' => '',
+        'pconnect' => FALSE,
+        'db_debug' => FALSE,
+        'cache_on' => FALSE,
+        'cachedir' => '',
+        'char_set' => 'WIN1252',
+        'dbcollat' => '',
+        'swap_pre' => '',
+        'encrypt' => FALSE,
+        'compress' => FALSE,
+        'stricton' => FALSE,
+        'failover' => array(),
+        'save_queries' => TRUE
+    );
+}
