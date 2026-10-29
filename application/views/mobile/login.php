@@ -6,15 +6,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#145c46">
     <title>ForçaV - Acesso</title>
-    <link href="<?php echo html_escape($appBasePath . '/css/mobile.css'); ?>" rel="stylesheet">
+    <link href="<?php echo html_escape($appBasePath . '/css/mobile.css?v=4'); ?>" rel="stylesheet">
 </head>
 <body class="mobile-page">
     <main class="auth-shell">
         <section class="auth-card" aria-labelledby="login-title">
-            <div class="brand-mark" aria-hidden="true">FV</div>
-            <p class="eyebrow">Força de vendas</p>
-            <h1 id="login-title">Acesse sua conta</h1>
-            <p class="muted">Entre com seu usuário do sistema.</p>
+            <img class="auth-logo"
+                 src="<?php echo html_escape($appBasePath . '/css/logo-cliente.png'); ?>"
+                 alt="Ideal Brasil Sistemas">
+                 <br>
+            <h1 class="auth-copy" id="login-title">Acesse sua conta</h1>
+
 
             <?php if ($error !== ''): ?>
                 <div class="alert" role="alert"><?php echo html_escape($error); ?></div>

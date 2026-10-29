@@ -9,6 +9,7 @@
 
     var customerSearch = document.getElementById('customer-search');
     var customerResults = document.getElementById('customer-results');
+    var representativeSelect = document.getElementById('representative-select');
     var selectedCustomer = document.getElementById('selected-customer');
     var customerIdInput = document.getElementById('customer-id');
     var productSearch = document.getElementById('product-search');
@@ -153,7 +154,11 @@
 
     function searchCustomers(term) {
         var requestId = ++customerRequest;
-        fetch(app.dataset.customersUrl + '?q=' + encodeURIComponent(term), {
+        var url = app.dataset.customersUrl + '?q=' + encodeURIComponent(term);
+        if (representativeSelect.value) {
+            url += '&representante=' + encodeURIComponent(representativeSelect.value);
+        }
+        fetch(url, {
             credentials: 'same-origin',
             headers: {'Accept': 'application/json'}
         })
@@ -174,6 +179,48 @@
                 if (requestId === customerRequest) {
                     showMessage(error.message, 'error');
                 }
+            });
+    }
+
+    function loadRepresentatives() {
+        fetch(app.dataset.representativesUrl, {
+            credentials: 'same-origin',
+            headers: {'Accept': 'application/json'}
+        })
+            .then(function (response) {
+                return response.json().then(function (data) {
+                    if (!response.ok) {
+                        throw new Error(data.message || 'Não foi possível carregar os representantes.');
+                    }
+                    return data;
+                });
+            })
+            .then(function (data) {
+                if (!Array.isArray(data.items)) {
+                    throw new Error('A lista de representantes retornada é inválida.');
+                }
+                representativeSelect.textContent = '';
+                var allOption = document.createElement('option');
+                allOption.value = '';
+                allOption.textContent = 'Todos os representantes (opcional)';
+                representativeSelect.appendChild(allOption);
+
+                data.items.forEach(function (representative) {
+                    var option = document.createElement('option');
+                    option.value = String(representative.id);
+                    option.textContent = representative.name;
+                    representativeSelect.appendChild(option);
+                });
+                representativeSelect.disabled = false;
+            })
+            .catch(function (error) {
+                representativeSelect.textContent = '';
+                var fallbackOption = document.createElement('option');
+                fallbackOption.value = '';
+                fallbackOption.textContent = 'Filtro indisponível - buscar todos';
+                representativeSelect.appendChild(fallbackOption);
+                representativeSelect.disabled = false;
+                showMessage(error.message, 'error');
             });
     }
 
@@ -435,6 +482,25 @@
         }, 250);
     });
 
+    representativeSelect.addEventListener('change', function () {
+        hideMessage();
+        window.clearTimeout(customerTimer);
+        customerRequest += 1;
+        customerResults.hidden = true;
+        customerResults.textContent = '';
+
+        var hadSelectedCustomer = Boolean(customer);
+        var term = hadSelectedCustomer ? '' : customerSearch.value.trim();
+        if (hadSelectedCustomer) {
+            customerSearch.value = '';
+        }
+        clearCustomer();
+
+        if (term.length >= 2) {
+            searchCustomers(term);
+        }
+    });
+
     productSearch.addEventListener('input', function () {
         hideMessage();
         var term = productSearch.value.trim();
@@ -509,6 +575,7 @@
                 );
                 saveButton.textContent = 'Pedido #' + data.order_id + ' salvo';
                 customerSearch.disabled = true;
+                representativeSelect.disabled = true;
                 productSearch.disabled = true;
                 conditionSelect.disabled = true;
                 paymentMethodSelect.disabled = true;
@@ -525,4 +592,5 @@
     });
 
     renderItems();
+    loadRepresentatives();
 }());

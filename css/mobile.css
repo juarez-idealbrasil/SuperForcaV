@@ -49,18 +49,20 @@ input {
 
 .auth-card {
     padding: 30px 24px;
+    color: #3a3a3c;
 }
 
-.brand-mark {
-    width: 52px;
-    height: 52px;
-    display: grid;
-    place-items: center;
-    border-radius: 16px;
-    background: #145c46;
-    color: #fff;
-    font-size: 19px;
-    font-weight: 800;
+.auth-logo {
+    display: block;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    margin: 0 auto;
+    object-fit: contain;
+}
+
+.auth-copy {
+    text-align: center;
 }
 
 .eyebrow {
@@ -74,6 +76,7 @@ input {
 
 .auth-card .eyebrow {
     margin-top: 24px;
+    color: #00b1cd;
 }
 
 h1,
@@ -91,6 +94,11 @@ p {
 .muted,
 .welcome-panel p:last-child {
     color: #6a7d74;
+}
+
+.auth-card .muted,
+.auth-shell .page-note {
+    color: #3a3a3c;
 }
 
 .auth-card form {
@@ -115,8 +123,8 @@ p {
 }
 
 .auth-card input:focus {
-    outline: 3px solid rgba(20, 92, 70, 0.16);
-    border-color: #28785d;
+    outline: 3px solid rgba(0, 177, 205, 0.2);
+    border-color: #00b1cd;
 }
 
 .primary-button,
@@ -130,12 +138,12 @@ p {
 
 .primary-button {
     margin-top: 14px;
-    background: #145c46;
+    background: #00b1cd;
     color: #fff;
 }
 
 .primary-button:active {
-    background: #0e4937;
+    background: #008ea4;
 }
 
 .alert {

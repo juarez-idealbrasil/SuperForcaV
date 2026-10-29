@@ -3,9 +3,35 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 class MobileOrder_model extends CI_Model
 {
-    public function searchCustomers($term)
+    public function getRepresentatives()
+    {
+        $query = $this->db->query(
+            'SELECT R.ID_PES, P.RAZ_SOC
+               FROM REPRES R
+               JOIN PESSOA P ON P.ID_PES = R.ID_PES
+              WHERE P.INATIVO = 0
+              ORDER BY P.RAZ_SOC'
+        );
+
+        return $this->mapRows($query, 'representative lookup', array('RAZ_SOC'));
+    }
+
+    public function searchCustomers($term, $representativeId = 0)
     {
         $pattern = $this->toDatabaseEncoding('%' . $term . '%');
+        $representativeFilter = '';
+        $params = array($pattern, $pattern, $pattern);
+        if ((int) $representativeId > 0) {
+            $representativeFilter = "
+                AND EXISTS (
+                    SELECT 1
+                      FROM PERFIL_CLIENTE_REPRES PC
+                     WHERE PC.ID_CLI = P.ID_PES
+                       AND PC.ID_REP = ?
+                )";
+            $params[] = (int) $representativeId;
+        }
+
         $query = $this->db->query(
             "SELECT FIRST 20
                     P.ID_PES,
@@ -41,9 +67,9 @@ class MobileOrder_model extends CI_Model
                 )
                 AND (UPPER(P.RAZ_SOC) LIKE UPPER(?)
                      OR UPPER(COALESCE(P.FANTASIA, '')) LIKE UPPER(?)
-                     OR UPPER(P.CNPJ_CPF) LIKE UPPER(?))
+                     OR UPPER(P.CNPJ_CPF) LIKE UPPER(?))" . $representativeFilter . "
               ORDER BY P.RAZ_SOC",
-            array($pattern, $pattern, $pattern)
+            $params
         );
 
         return $this->mapRows($query, 'customer search', array(

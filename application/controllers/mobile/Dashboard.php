@@ -144,6 +144,25 @@ class Dashboard extends CI_Controller
         $this->load->view('mobile/pedidos', $data);
     }
 
+    public function pedidos_representantes()
+    {
+        try {
+            $representatives = $this->MobileOrder_model->getRepresentatives();
+            $items = array_map(function ($representative) {
+                return array(
+                    'id' => (int) $representative['ID_PES'],
+                    'name' => $representative['RAZ_SOC']
+                );
+            }, $representatives);
+            $this->respondJson(array('items' => $items), 200);
+        } catch (RuntimeException $exception) {
+            $this->respondJson(
+                array('message' => 'Não foi possível carregar os representantes. Tente novamente.'),
+                500
+            );
+        }
+    }
+
     public function pedidos_clientes()
     {
         $term = $this->input->get('q');
@@ -152,8 +171,21 @@ class Dashboard extends CI_Controller
             return;
         }
 
+        $representativeId = $this->input->get('representante');
+        if ($representativeId === NULL || $representativeId === '') {
+            $representativeId = 0;
+        } elseif (!is_string($representativeId)
+            || filter_var($representativeId, FILTER_VALIDATE_INT) === FALSE
+            || (int) $representativeId < 1) {
+            $this->respondJson(array('message' => 'Selecione um representante válido.'), 422);
+            return;
+        }
+
         try {
-            $customers = $this->MobileOrder_model->searchCustomers(trim($term));
+            $customers = $this->MobileOrder_model->searchCustomers(
+                trim($term),
+                (int) $representativeId
+            );
             $items = array_map(function ($customer) {
                 return array(
                     'id' => (int) $customer['ID_PES'],

@@ -48,7 +48,7 @@ $formatChange = function ($change) {
 <body class="mobile-dashboard">
     <header class="dashboard-header">
         <div class="header-brand">
-            <span class="brand-mark" aria-hidden="true">FV</span>
+            <span class="brand-mark" aria-hidden="true">SFV</span>
             <div class="header-copy">
                 <h1>Visão Geral do Negócio</h1>
                 <p>Acompanhe os principais indicadores · Atualizado <?php echo date('d/m/Y H:i'); ?></p>

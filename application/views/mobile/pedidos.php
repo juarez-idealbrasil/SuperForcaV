@@ -16,7 +16,7 @@ $appBasePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 <body class="mobile-dashboard orders-mockup orders-live">
     <header class="dashboard-header">
         <div class="header-brand">
-            <span class="brand-mark" aria-hidden="true">FV</span>
+            <span class="brand-mark" aria-hidden="true">SFV</span>
             <div class="header-copy">
                 <h1>Novo pedido</h1>
                 <p>Olá, <?php echo html_escape($user_name); ?></p>
@@ -29,6 +29,7 @@ $appBasePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 
     <main class="orders-main"
         id="order-app"
+        data-representatives-url="<?php echo html_escape($appBasePath . '/index.php/mobile/dashboard/pedidos_representantes'); ?>"
         data-customers-url="<?php echo html_escape($appBasePath . '/index.php/mobile/dashboard/pedidos_clientes'); ?>"
         data-products-url="<?php echo html_escape($appBasePath . '/index.php/mobile/dashboard/pedidos_produtos'); ?>"
         data-payments-url="<?php echo html_escape($appBasePath . '/index.php/mobile/dashboard/pedidos_pagamentos'); ?>">
@@ -62,9 +63,23 @@ $appBasePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
                 </div>
             </nav>
 
-            <section class="order-card" aria-labelledby="customer-heading">
+            <section class="order-card" aria-labelledby="representative-heading">
                 <div class="order-section-heading">
                     <span class="section-number">01</span>
+                    <div>
+                        <h3 id="representative-heading">Representante</h3>
+                        <p>Opcional. Selecione para limitar a busca aos clientes vinculados.</p>
+                    </div>
+                </div>
+                <label class="mockup-label" for="representative-select">Selecionar representante</label>
+                <select id="representative-select" disabled>
+                    <option value="">Carregando representantes...</option>
+                </select>
+            </section>
+
+            <section class="order-card" aria-labelledby="customer-heading">
+                <div class="order-section-heading">
+                    <span class="section-number">02</span>
                     <div>
                         <h3 id="customer-heading">Cliente</h3>
                         <p>O representante padrão será identificado pelo perfil do cliente.</p>
@@ -82,7 +97,7 @@ $appBasePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 
             <section class="order-card" aria-labelledby="payment-heading">
                 <div class="order-section-heading">
-                    <span class="section-number">02</span>
+                    <span class="section-number">03</span>
                     <div>
                         <h3 id="payment-heading">Pagamento</h3>
                         <p>As opções respeitam as regras de venda e os limites cadastrados para o cliente.</p>
@@ -106,7 +121,7 @@ $appBasePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 
             <section class="order-card" aria-labelledby="products-heading">
                 <div class="order-section-heading">
-                    <span class="section-number">03</span>
+                    <span class="section-number">04</span>
                     <div>
                         <h3 id="products-heading">Produtos</h3>
                         <p>Os valores exibidos seguem o catálogo do cliente.</p>
@@ -144,6 +159,6 @@ $appBasePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
     </main>
 
     <footer class="dashboard-footer">ForçaV · O pedido será gravado como pendente</footer>
-    <script src="<?php echo html_escape($appBasePath . '/js/mobile-orders.js?v=2'); ?>" defer></script>
+    <script src="<?php echo html_escape($appBasePath . '/js/mobile-orders.js?v=3'); ?>" defer></script>
 </body>
 </html>
