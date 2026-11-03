@@ -21,7 +21,16 @@
     var conditionIdInput = document.getElementById('condition-id');
     var paymentMethodIdInput = document.getElementById('payment-method-id');
     var saveButton = document.getElementById('save-order');
+    var printOrderButton = document.getElementById('print-order');
     var message = document.getElementById('order-message');
+    var deliveryDateValueInput = document.getElementById('delivery-date-value');
+    var deliveryDatePicker = document.getElementById('delivery-date-picker');
+    var deliveryDateCalendar = document.getElementById('delivery-date-calendar');
+    var deliveryDateToggle = document.getElementById('delivery-date-toggle');
+    var deliveryCalendarMonthLabel = document.getElementById('delivery-calendar-month');
+    var deliveryCalendarGrid = document.getElementById('delivery-calendar-grid');
+    var deliveryCalendarPrevious = document.getElementById('delivery-calendar-previous');
+    var deliveryCalendarNext = document.getElementById('delivery-calendar-next');
     var countSummaries = document.querySelectorAll('[data-order-summary-count]');
     var totalSummaries = document.querySelectorAll('[data-order-summary-total]');
     var stepPanels = [
@@ -50,6 +59,14 @@
     var productTimer = null;
     var customerRequest = 0;
     var productRequest = 0;
+    var productImagePreview = null;
+    var productImagePreviewImage = null;
+    var productImagePreviewTrigger = null;
+    var savedOrderId = null;
+    var isPreparingOrderPdf = false;
+    var orderPdfUrl = null;
+    var selectedDeliveryDate = new Date(deliveryDateInput.value.split('/').reverse().join('-') + 'T00:00:00');
+    var calendarMonth = new Date(selectedDeliveryDate.getFullYear(), selectedDeliveryDate.getMonth(), 1);
 
     function currency(value) {
         return new Intl.NumberFormat('pt-BR', {
@@ -65,9 +82,290 @@
         }).format(value);
     }
 
+    function addPdfLines(lines, text, options) {
+        var settings = options || {};
+        var maxLength = settings.maxLength || 78;
+        var words = String(text).split(/\s+/);
+        var line = '';
+
+        words.forEach(function (word) {
+            while (word.length > maxLength) {
+                if (line) {
+                    lines.push({text: line, size: settings.size || 10, bold: Boolean(settings.bold)});
+                    line = '';
+                }
+                lines.push({
+                    text: word.slice(0, maxLength),
+                    size: settings.size || 10,
+                    bold: Boolean(settings.bold)
+                });
+                word = word.slice(maxLength);
+            }
+
+            if (line && (line.length + word.length + 1) > maxLength) {
+                lines.push({text: line, size: settings.size || 10, bold: Boolean(settings.bold)});
+                line = word;
+            } else {
+                line = line ? line + ' ' + word : word;
+            }
+        });
+
+        if (line) {
+            lines.push({text: line, size: settings.size || 10, bold: Boolean(settings.bold)});
+        }
+    }
+
+    function encodePdfText(text) {
+        var specialCharacters = {
+            0x20ac: 0x80, 0x201a: 0x82, 0x192: 0x83, 0x201e: 0x84,
+            0x2026: 0x85, 0x2020: 0x86, 0x2021: 0x87, 0x2c6: 0x88,
+            0x2030: 0x89, 0x160: 0x8a, 0x2039: 0x8b, 0x152: 0x8c,
+            0x17d: 0x8e, 0x2018: 0x91, 0x2019: 0x92, 0x201c: 0x93,
+            0x201d: 0x94, 0x2022: 0x95, 0x2013: 0x96, 0x2014: 0x97,
+            0x2dc: 0x98, 0x2122: 0x99, 0x161: 0x9a, 0x203a: 0x9b,
+            0x153: 0x9c, 0x17e: 0x9e, 0x178: 0x9f
+        };
+        var hex = '';
+
+        Array.from(String(text)).forEach(function (character) {
+            var code = character.codePointAt(0);
+            var byte = code <= 0x7e || (code >= 0xa0 && code <= 0xff)
+                ? code
+                : specialCharacters[code] || 0x3f;
+            hex += byte.toString(16).padStart(2, '0');
+        });
+
+        return hex.toUpperCase();
+    }
+
+    function createOrderPdf(orderId) {
+        var lines = [];
+        var orderTotal = items.reduce(function (sum, item) {
+            return sum + Math.round(item.price * item.quantity * (100 - item.discount)) / 100;
+        }, 0);
+        var today = new Intl.DateTimeFormat('pt-BR').format(new Date());
+        var deliveryDate = new Intl.DateTimeFormat('pt-BR', {timeZone: 'UTC'}).format(
+            new Date(deliveryDateValueInput.value + 'T00:00:00Z')
+        );
+
+        addPdfLines(lines, 'PEDIDO DE VENDA #' + orderId, {bold: true, size: 18});
+        addPdfLines(lines, 'Forca V - Pedido pendente', {bold: true, size: 11});
+        lines.push({text: 'Emitido em: ' + today, size: 10});
+        lines.push({text: '', size: 6});
+        addPdfLines(lines, 'Cliente: ' + customer.name, {bold: true});
+        if (customer.document) {
+            addPdfLines(lines, 'Documento: ' + customer.document);
+        }
+        addPdfLines(lines, 'Condicao de pagamento: ' + conditionSelect.options[conditionSelect.selectedIndex].text);
+        addPdfLines(lines, 'Forma de pagamento: ' + paymentMethodSelect.options[paymentMethodSelect.selectedIndex].text);
+        addPdfLines(lines, 'Data de entrega: ' + deliveryDate);
+        lines.push({text: '', size: 6});
+        addPdfLines(lines, 'PRODUTOS', {bold: true, size: 12});
+        addPdfLines(lines, '------------------------------------------------------------');
+
+        items.forEach(function (item, index) {
+            var lineTotal = Math.round(item.price * item.quantity * (100 - item.discount)) / 100;
+            addPdfLines(lines, (index + 1) + '. ' + item.description, {bold: true});
+            addPdfLines(
+                lines,
+                'Qtd.: ' + formatQuantity(item.quantity, true)
+                    + ' | Unitario: ' + currency(item.price)
+                    + ' | Desconto: ' + formatQuantity(item.discount, true) + '%'
+            );
+            addPdfLines(lines, 'Total do item: ' + currency(lineTotal), {bold: true});
+            lines.push({text: '', size: 5});
+        });
+
+        addPdfLines(lines, 'TOTAL DO PEDIDO: ' + currency(orderTotal), {bold: true, size: 13});
+        observationInputs.forEach(function (input, index) {
+            if (input.value.trim()) {
+                addPdfLines(lines, 'Observacao ' + (index + 1) + ': ' + input.value.trim());
+            }
+        });
+
+        var pageLines = [];
+        while (lines.length) {
+            pageLines.push(lines.splice(0, 43));
+        }
+
+        var objects = [
+            '<< /Type /Catalog /Pages 2 0 R >>',
+            '',
+            '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>',
+            '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>'
+        ];
+        var pageReferences = [];
+
+        pageLines.forEach(function (page) {
+            var pageObjectNumber = objects.length + 1;
+            var contentObjectNumber = pageObjectNumber + 1;
+            var content = page.map(function (line, index) {
+                if (!line.text) {
+                    return '';
+                }
+                var font = line.bold ? 'F2' : 'F1';
+                var y = 790 - index * 17;
+                return 'BT /' + font + ' ' + line.size + ' Tf 48 ' + y
+                    + ' Td <' + encodePdfText(line.text) + '> Tj ET\n';
+            }).join('');
+
+            pageReferences.push(pageObjectNumber + ' 0 R');
+            objects.push(
+                '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842]'
+                    + ' /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >>'
+                    + ' /Contents ' + contentObjectNumber + ' 0 R >>'
+            );
+            objects.push('<< /Length ' + content.length + ' >>\nstream\n' + content + 'endstream');
+        });
+
+        objects[1] = '<< /Type /Pages /Kids [' + pageReferences.join(' ')
+            + '] /Count ' + pageReferences.length + ' >>';
+
+        var pdf = '%PDF-1.4\n';
+        var offsets = [0];
+        objects.forEach(function (object, index) {
+            offsets.push(pdf.length);
+            pdf += (index + 1) + ' 0 obj\n' + object + '\nendobj\n';
+        });
+
+        var xrefOffset = pdf.length;
+        pdf += 'xref\n0 ' + (objects.length + 1) + '\n';
+        pdf += '0000000000 65535 f \n';
+        for (var objectIndex = 1; objectIndex < offsets.length; objectIndex += 1) {
+            pdf += String(offsets[objectIndex]).padStart(10, '0') + ' 00000 n \n';
+        }
+        pdf += 'trailer\n<< /Size ' + (objects.length + 1) + ' /Root 1 0 R >>\n';
+        pdf += 'startxref\n' + xrefOffset + '\n%%EOF';
+
+        return new Blob([pdf], {type: 'application/pdf'});
+    }
+
+    function parseDeliveryDate(value) {
+        var match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value);
+        if (!match) {
+            return '';
+        }
+
+        var day = Number(match[1]);
+        var month = Number(match[2]);
+        var year = Number(match[3]);
+        var date = new Date(year, month - 1, day);
+        if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+            return '';
+        }
+
+        return year + '-' + match[2] + '-' + match[1];
+    }
+
+    function formatDateForInput(date) {
+        return [
+            String(date.getDate()).padStart(2, '0'),
+            String(date.getMonth() + 1).padStart(2, '0'),
+            date.getFullYear()
+        ].join('/');
+    }
+
+    function formatDateForSubmission(date) {
+        return [
+            date.getFullYear(),
+            String(date.getMonth() + 1).padStart(2, '0'),
+            String(date.getDate()).padStart(2, '0')
+        ].join('-');
+    }
+
+    function setDeliveryCalendarOpen(isOpen) {
+        deliveryDateCalendar.hidden = !isOpen;
+        deliveryDateToggle.setAttribute('aria-expanded', String(isOpen));
+        deliveryDateInput.setAttribute('aria-expanded', String(isOpen));
+    }
+
+    function renderDeliveryCalendar() {
+        var minDateParts = deliveryDateInput.dataset.minDate.split('-');
+        var minDate = new Date(
+            Number(minDateParts[0]),
+            Number(minDateParts[1]) - 1,
+            Number(minDateParts[2])
+        );
+        var minMonth = new Date(minDate.getFullYear(), minDate.getMonth(), 1);
+        if (calendarMonth < minMonth) {
+            calendarMonth = minMonth;
+        }
+        deliveryCalendarMonthLabel.textContent = new Intl.DateTimeFormat('pt-BR', {
+            month: 'long',
+            year: 'numeric'
+        }).format(calendarMonth);
+        deliveryCalendarPrevious.disabled = calendarMonth <= minMonth;
+        deliveryCalendarGrid.textContent = '';
+
+        ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].forEach(function (weekday) {
+            var heading = document.createElement('span');
+            heading.className = 'delivery-calendar-weekday';
+            heading.textContent = weekday;
+            heading.setAttribute('aria-hidden', 'true');
+            deliveryCalendarGrid.appendChild(heading);
+        });
+
+        var firstWeekday = calendarMonth.getDay();
+        for (var blank = 0; blank < firstWeekday; blank += 1) {
+            var emptyCell = document.createElement('span');
+            emptyCell.setAttribute('aria-hidden', 'true');
+            deliveryCalendarGrid.appendChild(emptyCell);
+        }
+
+        var daysInMonth = new Date(
+            calendarMonth.getFullYear(),
+            calendarMonth.getMonth() + 1,
+            0
+        ).getDate();
+        for (var day = 1; day <= daysInMonth; day += 1) {
+            var date = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), day);
+            var dateValue = formatDateForSubmission(date);
+            var dayButton = document.createElement('button');
+            dayButton.type = 'button';
+            dayButton.className = 'delivery-calendar-day';
+            dayButton.textContent = String(day);
+            dayButton.disabled = dateValue < deliveryDateInput.dataset.minDate;
+            dayButton.setAttribute('aria-label', new Intl.DateTimeFormat('pt-BR', {
+                dateStyle: 'full'
+            }).format(date));
+            dayButton.setAttribute('aria-pressed', String(dateValue === deliveryDateValueInput.value));
+            dayButton.addEventListener('click', function (selectedDate) {
+                return function () {
+                    deliveryDateInput.value = formatDateForInput(selectedDate);
+                    deliveryDateValueInput.value = formatDateForSubmission(selectedDate);
+                    updateSaveButton();
+                    setDeliveryCalendarOpen(false);
+                    deliveryDateToggle.focus();
+                };
+            }(date));
+            deliveryCalendarGrid.appendChild(dayButton);
+        }
+    }
+
     function showMessage(text, type) {
         message.textContent = text;
         message.className = 'order-message is-' + type;
+        message.hidden = false;
+    }
+
+    function showOrderPdfLink(text, pdfBlob, orderId) {
+        if (orderPdfUrl) {
+            URL.revokeObjectURL(orderPdfUrl);
+        }
+        orderPdfUrl = URL.createObjectURL(pdfBlob);
+
+        message.textContent = '';
+        message.className = 'order-message is-success';
+        message.appendChild(document.createTextNode(text + ' '));
+
+        var link = document.createElement('a');
+        link.href = orderPdfUrl;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.type = 'application/pdf';
+        link.textContent = 'Abrir PDF';
+        link.setAttribute('aria-label', 'Abrir o PDF do pedido ' + orderId + ' no navegador');
+        message.appendChild(link);
         message.hidden = false;
     }
 
@@ -143,7 +441,66 @@
         setCurrentStep(step);
     }
 
-    function makeSearchResult(label, detail, onClick, buttonLabel, imageData) {
+    function closeProductImagePreview() {
+        if (!productImagePreview || productImagePreview.hidden) {
+            return;
+        }
+
+        productImagePreview.hidden = true;
+        productImagePreviewImage.removeAttribute('src');
+        if (productImagePreviewTrigger) {
+            productImagePreviewTrigger.focus();
+            productImagePreviewTrigger = null;
+        }
+    }
+
+    function openProductImagePreview(image, label) {
+        if (image.classList.contains('is-unavailable') || !image.src) {
+            return;
+        }
+
+        if (!productImagePreview) {
+            productImagePreview = document.createElement('div');
+            productImagePreview.className = 'product-image-preview';
+            productImagePreview.setAttribute('role', 'dialog');
+            productImagePreview.setAttribute('aria-modal', 'true');
+            productImagePreview.setAttribute('aria-label', 'Imagem ampliada do produto');
+            productImagePreview.hidden = true;
+
+            var closeButton = document.createElement('button');
+            closeButton.type = 'button';
+            closeButton.className = 'product-image-preview-close';
+            closeButton.textContent = 'Fechar';
+            closeButton.setAttribute('aria-label', 'Fechar imagem ampliada');
+            closeButton.addEventListener('click', closeProductImagePreview);
+
+            productImagePreviewImage = document.createElement('img');
+            productImagePreviewImage.className = 'product-image-preview-image';
+            productImagePreviewImage.alt = '';
+
+            productImagePreview.appendChild(closeButton);
+            productImagePreview.appendChild(productImagePreviewImage);
+            productImagePreview.addEventListener('click', function (event) {
+                if (event.target === productImagePreview) {
+                    closeProductImagePreview();
+                }
+            });
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') {
+                    closeProductImagePreview();
+                }
+            });
+            document.body.appendChild(productImagePreview);
+        }
+
+        productImagePreviewImage.src = image.currentSrc || image.src;
+        productImagePreviewImage.alt = label;
+        productImagePreviewTrigger = image;
+        productImagePreview.hidden = false;
+        productImagePreview.querySelector('.product-image-preview-close').focus();
+    }
+
+    function makeSearchResult(label, detail, onClick, buttonLabel, imageData, buttonAriaLabel) {
         var row = document.createElement('div');
         row.className = 'order-search-result';
 
@@ -151,8 +508,52 @@
             var image = document.createElement('img');
             image.className = 'order-result-image';
             image.src = imageData.url;
-            image.alt = '';
+            image.alt = label;
+            image.setAttribute('role', 'button');
+            image.setAttribute('tabindex', '0');
+            image.setAttribute('aria-label', 'Ampliar imagem do produto: ' + label);
+            image.title = 'Segure por 1 segundo para ampliar';
             image.loading = 'lazy';
+
+            var pressTimer = null;
+            var pressStartX = 0;
+            var pressStartY = 0;
+            function clearPressTimer() {
+                if (pressTimer !== null) {
+                    window.clearTimeout(pressTimer);
+                    pressTimer = null;
+                }
+            }
+
+            image.addEventListener('pointerdown', function (event) {
+                if (event.button !== undefined && event.button !== 0) {
+                    return;
+                }
+                pressStartX = event.clientX;
+                pressStartY = event.clientY;
+                pressTimer = window.setTimeout(function () {
+                    pressTimer = null;
+                    openProductImagePreview(image, label);
+                }, 1000);
+            });
+            image.addEventListener('pointermove', function (event) {
+                if (Math.abs(event.clientX - pressStartX) > 10
+                    || Math.abs(event.clientY - pressStartY) > 10) {
+                    clearPressTimer();
+                }
+            });
+            image.addEventListener('pointerup', clearPressTimer);
+            image.addEventListener('pointercancel', clearPressTimer);
+            image.addEventListener('pointerleave', clearPressTimer);
+            image.addEventListener('contextmenu', function (event) {
+                event.preventDefault();
+            });
+            image.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    openProductImagePreview(image, label);
+                }
+            });
             image.addEventListener('error', function () {
                 if (imageData.fallbackUrl && image.src !== imageData.fallbackUrl) {
                     image.src = imageData.fallbackUrl;
@@ -180,6 +581,9 @@
         button.type = 'button';
         button.className = 'order-result-button';
         button.textContent = buttonLabel;
+        if (buttonAriaLabel) {
+            button.setAttribute('aria-label', buttonAriaLabel);
+        }
         button.addEventListener('click', onClick);
 
         row.appendChild(copy);
@@ -342,11 +746,12 @@
                     product.description,
                     'Cód. ' + (product.barcode || product.id) + ' · ' + currency(product.price),
                     function () { addProduct(product); },
-                    'Adicionar',
+                    '+',
                     {
                         url: product.image_url,
                         fallbackUrl: product.fallback_image_url
-                    }
+                    },
+                    'Adicionar produto: ' + product.description
                 ));
             });
         }
@@ -649,10 +1054,12 @@
     function updateSaveButton() {
         conditionIdInput.value = conditionSelect.value;
         paymentMethodIdInput.value = paymentMethodSelect.value;
+        var deliveryDate = parseDeliveryDate(deliveryDateInput.value);
+        deliveryDateValueInput.value = deliveryDate;
         saveButton.disabled = isSaving || isSaved || !customer || items.length === 0
             || !conditionSelect.value || !paymentMethodSelect.value
-            || currentStep !== 3 || !deliveryDateInput.value
-            || deliveryDateInput.value < deliveryDateInput.min
+            || currentStep !== 3 || !deliveryDate
+            || deliveryDate < deliveryDateInput.dataset.minDate
             || observationInputs.some(function (input) { return input.value.length > 80; });
     }
 
@@ -731,7 +1138,108 @@
     document.getElementById('step-three-back').addEventListener('click', function () {
         goToStep(2);
     });
-    deliveryDateInput.addEventListener('change', updateSaveButton);
+    deliveryDateInput.addEventListener('input', function () {
+        var parsedDate = parseDeliveryDate(deliveryDateInput.value);
+        if (parsedDate) {
+            var dateParts = parsedDate.split('-');
+            calendarMonth = new Date(Number(dateParts[0]), Number(dateParts[1]) - 1, 1);
+        }
+        updateSaveButton();
+        if (!deliveryDateCalendar.hidden) {
+            renderDeliveryCalendar();
+        }
+    });
+    deliveryDateToggle.addEventListener('click', function () {
+        if (deliveryDateCalendar.hidden) {
+            var parsedDate = parseDeliveryDate(deliveryDateInput.value);
+            if (parsedDate) {
+                var dateParts = parsedDate.split('-');
+                calendarMonth = new Date(Number(dateParts[0]), Number(dateParts[1]) - 1, 1);
+            }
+            renderDeliveryCalendar();
+            setDeliveryCalendarOpen(true);
+        } else {
+            setDeliveryCalendarOpen(false);
+        }
+    });
+    deliveryCalendarPrevious.addEventListener('click', function () {
+        calendarMonth.setMonth(calendarMonth.getMonth() - 1);
+        renderDeliveryCalendar();
+    });
+    deliveryCalendarNext.addEventListener('click', function () {
+        calendarMonth.setMonth(calendarMonth.getMonth() + 1);
+        renderDeliveryCalendar();
+    });
+    document.addEventListener('click', function (event) {
+        if (!deliveryDatePicker.contains(event.target)) {
+            setDeliveryCalendarOpen(false);
+        }
+    });
+    deliveryDateCalendar.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            setDeliveryCalendarOpen(false);
+            deliveryDateToggle.focus();
+        }
+    });
+    printOrderButton.addEventListener('click', async function () {
+        if (!savedOrderId || isPreparingOrderPdf) {
+            return;
+        }
+
+        isPreparingOrderPdf = true;
+        printOrderButton.disabled = true;
+        printOrderButton.textContent = 'Preparando PDF...';
+        try {
+            var pdfBlob = createOrderPdf(savedOrderId);
+            var pdfFile = typeof File === 'function'
+                ? new File([pdfBlob], 'pedido-' + savedOrderId + '.pdf', {type: 'application/pdf'})
+                : null;
+            var canSharePdf = false;
+            if (pdfFile && navigator.share && navigator.canShare) {
+                try {
+                    canSharePdf = navigator.canShare({files: [pdfFile]});
+                } catch (error) {
+                    canSharePdf = false;
+                }
+            }
+
+            if (canSharePdf) {
+                try {
+                    await navigator.share({
+                        files: [pdfFile],
+                        title: 'Pedido #' + savedOrderId,
+                        text: 'Pedido de venda #' + savedOrderId + ' - ' + customer.name
+                    });
+                } catch (error) {
+                    if (error.name === 'AbortError') {
+                        return;
+                    }
+                    showOrderPdfLink(
+                        'Não foi possível abrir o compartilhamento.',
+                        pdfBlob,
+                        savedOrderId
+                    );
+                }
+            } else {
+                showOrderPdfLink(
+                    'PDF gerado. Abra-o no navegador para imprimir ou compartilhar por e-mail ou WhatsApp.',
+                    pdfBlob,
+                    savedOrderId
+                );
+            }
+        } catch (error) {
+            showMessage('Não foi possível preparar o PDF do pedido.', 'error');
+        } finally {
+            isPreparingOrderPdf = false;
+            printOrderButton.disabled = false;
+            printOrderButton.textContent = 'Imprimir';
+        }
+    });
+    window.addEventListener('beforeunload', function () {
+        if (orderPdfUrl) {
+            URL.revokeObjectURL(orderPdfUrl);
+        }
+    });
     observationInputs.forEach(function (input) {
         input.addEventListener('input', updateSaveButton);
     });
@@ -742,7 +1250,8 @@
         if (saveButton.disabled) {
             if (currentStep !== 3) {
                 showMessage('Conclua as etapas anteriores antes de salvar o pedido.', 'error');
-            } else if (!deliveryDateInput.value || deliveryDateInput.value < deliveryDateInput.min) {
+            } else if (!deliveryDateValueInput.value
+                || deliveryDateValueInput.value < deliveryDateInput.dataset.minDate) {
                 showMessage('Informe uma data de entrega igual ou posterior à data atual.', 'error');
                 deliveryDateInput.focus();
             }
@@ -756,7 +1265,7 @@
             'Confirma salvar o pedido de ' + customer.name + ' no valor de '
             + currency(total) + ' para entrega em '
             + new Intl.DateTimeFormat('pt-BR', {timeZone: 'UTC'}).format(
-                new Date(deliveryDateInput.value + 'T00:00:00Z')
+                new Date(deliveryDateValueInput.value + 'T00:00:00Z')
             ) + ' como pendente (status 99)?'
         )) {
             return;
@@ -795,6 +1304,7 @@
             })
             .then(function (data) {
                 isSaved = true;
+                savedOrderId = data.order_id;
                 setCurrentStep(3);
                 showMessage(
                     data.duplicate
@@ -806,6 +1316,9 @@
                     'success'
                 );
                 saveButton.textContent = 'Pedido #' + data.order_id + ' salvo';
+                saveButton.parentElement.classList.add('is-saved');
+                document.getElementById('step-three-back').hidden = true;
+                printOrderButton.hidden = false;
                 customerSearch.disabled = true;
                 representativeSelect.disabled = true;
                 productSearch.disabled = true;

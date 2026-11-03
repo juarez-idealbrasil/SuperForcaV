@@ -11,7 +11,7 @@ $appBasePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
     <meta name="theme-color" content="#0b3c5d">
     <title>ForçaV - Novo pedido</title>
     <link href="<?php echo html_escape($appBasePath . '/css/mobile-dashboard.css?v=orders-live-1'); ?>" rel="stylesheet">
-    <link href="<?php echo html_escape($appBasePath . '/css/mobile-orders-mockup.css?v=14'); ?>" rel="stylesheet">
+    <link href="<?php echo html_escape($appBasePath . '/css/mobile-orders-mockup.css?v=20'); ?>" rel="stylesheet">
 </head>
 <body class="mobile-dashboard orders-mockup orders-live">
     <header class="dashboard-header">
@@ -23,7 +23,7 @@ $appBasePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
             </div>
         </div>
         <a class="orders-back-link" href="<?php echo html_escape($appBasePath . '/index.php/mobile/dashboard'); ?>">
-            Voltar ao painel
+            Voltar
         </a>
     </header>
 
@@ -183,9 +183,38 @@ $appBasePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
                         </div>
                     </div>
                     <label class="mockup-label" for="delivery-date">Data de entrega</label>
-                    <input class="order-text-input" id="delivery-date" name="delivery_date"
-                        type="date" min="<?php echo html_escape(date('Y-m-d')); ?>"
-                        value="<?php echo html_escape(date('Y-m-d')); ?>" required>
+                    <input type="hidden" id="delivery-date-value" name="delivery_date"
+                        value="<?php echo html_escape(date('Y-m-d')); ?>">
+                    <div class="delivery-date-picker" id="delivery-date-picker">
+                        <div class="delivery-date-input-row">
+                            <input class="order-text-input" id="delivery-date" type="text"
+                                inputmode="numeric" placeholder="dd/mm/aaaa" pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}"
+                                maxlength="10" data-min-date="<?php echo html_escape(date('Y-m-d')); ?>"
+                                value="<?php echo html_escape(date('d/m/Y')); ?>"
+                                aria-haspopup="dialog" aria-expanded="false"
+                                aria-controls="delivery-date-calendar" required>
+                            <button class="delivery-date-toggle" id="delivery-date-toggle" type="button"
+                                aria-label="Abrir calendário" aria-expanded="false"
+                                aria-controls="delivery-date-calendar" title="Abrir calendário">
+                                <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+                                    <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+                                    <path d="M16 3v4M8 3v4M3 10h18"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="delivery-date-calendar" id="delivery-date-calendar"
+                            role="dialog" aria-label="Escolher data de entrega" hidden>
+                            <div class="delivery-calendar-heading">
+                                <button type="button" id="delivery-calendar-previous"
+                                    aria-label="Mês anterior">&lsaquo;</button>
+                                <strong id="delivery-calendar-month"></strong>
+                                <button type="button" id="delivery-calendar-next"
+                                    aria-label="Próximo mês">&rsaquo;</button>
+                            </div>
+                            <div class="delivery-calendar-grid" id="delivery-calendar-grid"
+                                role="group" aria-label="Dias do mês"></div>
+                        </div>
+                    </div>
 
                     <div class="order-observations">
                         <div>
@@ -221,12 +250,13 @@ $appBasePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
                 <button class="primary-action" id="save-order" type="submit" disabled>
                     Salvar pedido <span aria-hidden="true">&rarr;</span>
                 </button>
+                <button class="secondary-action" id="print-order" type="button" hidden>Imprimir</button>
             </div>
             </div>
         </form>
     </main>
 
     <footer class="dashboard-footer">ForçaV · O pedido será gravado como pendente</footer>
-    <script src="<?php echo html_escape($appBasePath . '/js/mobile-orders.js?v=10'); ?>" defer></script>
+    <script src="<?php echo html_escape($appBasePath . '/js/mobile-orders.js?v=16'); ?>" defer></script>
 </body>
 </html>
