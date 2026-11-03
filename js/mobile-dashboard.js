@@ -6,6 +6,7 @@
     var buttons = document.querySelectorAll('[data-view]');
     var filterMenu = document.getElementById('dashboard-filter-menu');
     var filterToggle = filterMenu ? filterMenu.querySelector('summary') : null;
+    var filterOptions = document.getElementById('dashboard-filter-options');
 
     if (filterMenu) {
         var closeButtons = filterMenu.querySelectorAll('.filter-close, .filter-backdrop');
@@ -13,6 +14,9 @@
         Array.prototype.forEach.call(closeButtons, function (button) {
             button.addEventListener('click', function () {
                 filterMenu.open = false;
+                if (filterOptions) {
+                    filterOptions.open = false;
+                }
                 filterToggle.focus();
             });
         });
@@ -20,6 +24,9 @@
         document.addEventListener('keydown', function (event) {
             if (event.key === 'Escape' && filterMenu.open) {
                 filterMenu.open = false;
+                if (filterOptions) {
+                    filterOptions.open = false;
+                }
                 filterToggle.focus();
             }
         });

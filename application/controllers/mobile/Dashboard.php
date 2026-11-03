@@ -130,15 +130,17 @@ class Dashboard extends CI_Controller
     {
         try {
             $orderToken = $this->getOrderToken();
+            $discountEnabled = $this->MobileOrder_model->isDiscountFieldEnabled();
         } catch (Exception $exception) {
-            log_message('error', 'Mobile order token generation failed: ' . $exception->getMessage());
-            show_error('Não foi possível iniciar um pedido neste momento.', 500);
+            log_message('error', 'Mobile order initialization failed: ' . $exception->getMessage());
+            show_error('Não foi possível carregar as configurações do pedido.', 500);
             return;
         }
 
         $data = array(
             'user_name' => $this->session->userdata('mobile_user_name'),
-            'order_token' => $orderToken
+            'order_token' => $orderToken,
+            'discount_enabled' => $discountEnabled
         );
 
         $this->load->view('mobile/pedidos', $data);
@@ -223,11 +225,18 @@ class Dashboard extends CI_Controller
             }
 
             $products = $this->MobileOrder_model->searchProducts($customer, trim($term));
-            $items = array_map(function ($product) {
+            $imageRepository = $this->MobileOrder_model->getProductImageRepository();
+            $items = array_map(function ($product) use ($imageRepository) {
+                $barcode = trim((string) $product['BAR_CODE']);
+                $imageFilename = $barcode !== '' ? $barcode : (string) $product['ID_PRO'];
                 return array(
                     'id' => (int) $product['ID_PRO'],
                     'description' => $product['DESCRICAO'],
-                    'barcode' => $product['BAR_CODE'],
+                    'barcode' => $barcode,
+                    'image_url' => $this->buildProductImageUrl($imageRepository, $imageFilename),
+                    'fallback_image_url' => $barcode !== ''
+                        ? $this->buildProductImageUrl($imageRepository, (string) $product['ID_PRO'])
+                        : '',
                     'price' => (float) $product['PRECO']
                 );
             }, $products);
@@ -240,6 +249,20 @@ class Dashboard extends CI_Controller
                 500
             );
         }
+    }
+
+    private function buildProductImageUrl($imageRepository, $filename)
+    {
+        $repositorySegments = array_filter(
+            explode('/', str_replace('\\', '/', trim($imageRepository, "/\\"))),
+            'strlen'
+        );
+        $pathSegments = array_merge($repositorySegments, array($filename . '.webp'));
+
+        return 'https://idealbrasil.net/b2b/images/' . implode(
+            '/',
+            array_map('rawurlencode', $pathSegments)
+        );
     }
 
     public function pedidos_pagamentos()
@@ -301,6 +324,12 @@ class Dashboard extends CI_Controller
         $customerId = $this->input->post('customer_id');
         $conditionId = $this->input->post('condition_id');
         $paymentMethodId = $this->input->post('payment_method_id');
+        $deliveryDate = $this->input->post('delivery_date');
+        $observations = array(
+            $this->input->post('observ_1'),
+            $this->input->post('observ_2'),
+            $this->input->post('observ_3')
+        );
         $itemsJson = $this->input->post('items', FALSE);
         if (!is_string($customerId) || filter_var($customerId, FILTER_VALIDATE_INT) === FALSE
             || (int) $customerId < 1
@@ -310,6 +339,27 @@ class Dashboard extends CI_Controller
             || (int) $paymentMethodId < 1) {
             $this->respondJson(array('message' => 'Confira o cliente e os dados de pagamento.'), 422);
             return;
+        }
+
+        if (!$this->isValidDeliveryDate($deliveryDate)) {
+            $this->respondJson(
+                array('message' => 'Informe uma data de entrega válida, igual ou posterior à data atual.'),
+                422
+            );
+            return;
+        }
+
+        foreach ($observations as $index => $observation) {
+            if ($observation === NULL) {
+                $observations[$index] = '';
+            } elseif (!is_string($observation)
+                || preg_match('/\A.{0,80}\z/us', $observation) !== 1) {
+                $this->respondJson(
+                    array('message' => 'Cada observação pode conter no máximo 80 caracteres.'),
+                    422
+                );
+                return;
+            }
         }
 
         $items = $this->decodeOrderItems($itemsJson);
@@ -339,9 +389,11 @@ class Dashboard extends CI_Controller
                 $items,
                 (int) $conditionId,
                 (int) $paymentMethodId,
-                $orderHash
+                $orderHash,
+                $deliveryDate,
+                $observations,
+                $this->session->userdata('mobile_user_name')
             );
-
             $this->session->set_userdata(array(
                 'mobile_order_previous_token' => $token,
                 'mobile_order_previous_id' => $result['id'],
@@ -350,7 +402,8 @@ class Dashboard extends CI_Controller
             $this->respondJson(array(
                 'order_id' => (int) $result['id'],
                 'total' => isset($result['total']) ? $result['total'] : NULL,
-                'duplicate' => (bool) $result['duplicate']
+                'duplicate' => (bool) $result['duplicate'],
+                'observation_truncated' => !empty($result['observation_truncated'])
             ), 200);
         } catch (DomainException $exception) {
             $this->respondJson(array('message' => $exception->getMessage()), 422);
@@ -360,6 +413,18 @@ class Dashboard extends CI_Controller
                 500
             );
         }
+    }
+
+    private function isValidDeliveryDate($deliveryDate)
+    {
+        if (!is_string($deliveryDate)
+            || preg_match('/\A\d{4}-\d{2}-\d{2}\z/', $deliveryDate) !== 1) {
+            return FALSE;
+        }
+
+        $parts = explode('-', $deliveryDate);
+        return checkdate((int) $parts[1], (int) $parts[2], (int) $parts[0])
+            && $deliveryDate >= date('Y-m-d');
     }
 
     private function decodeOrderItems($itemsJson)
@@ -381,16 +446,25 @@ class Dashboard extends CI_Controller
             }
             $quantity = isset($item['quantity']) && is_numeric($item['quantity'])
                 ? (float) $item['quantity'] : 0;
+            $discount = array_key_exists('discount', $item) ? $item['discount'] : 0;
+            if (!is_numeric($discount)) {
+                return NULL;
+            }
+            $discount = (float) $discount;
             if (!isset($item['id'], $item['quantity'], $item['price'])
                 || filter_var($item['id'], FILTER_VALIDATE_INT) === FALSE
                 || (int) $item['id'] < 1
                 || !is_numeric($item['quantity'])
                 || !is_numeric($item['price'])
                 || !is_finite($quantity)
+                || !is_finite($discount)
                 || !is_finite((float) $item['price'])
                 || $quantity < 0.001
                 || $quantity > 100000
                 || abs($quantity - round($quantity, 3)) > 0.0000001
+                || $discount < 0
+                || $discount > 100
+                || abs($discount - round($discount, 2)) > 0.0000001
                 || (float) $item['price'] <= 0) {
                 return NULL;
             }
@@ -404,7 +478,8 @@ class Dashboard extends CI_Controller
             $items[] = array(
                 'id' => $productId,
                 'quantity' => $quantity,
-                'price' => (float) $item['price']
+                'price' => (float) $item['price'],
+                'discount' => $discount
             );
         }
 

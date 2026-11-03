@@ -11,7 +11,7 @@ $appBasePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
     <meta name="theme-color" content="#0b3c5d">
     <title>ForçaV - Novo pedido</title>
     <link href="<?php echo html_escape($appBasePath . '/css/mobile-dashboard.css?v=orders-live-1'); ?>" rel="stylesheet">
-    <link href="<?php echo html_escape($appBasePath . '/css/mobile-orders-mockup.css?v=4'); ?>" rel="stylesheet">
+    <link href="<?php echo html_escape($appBasePath . '/css/mobile-orders-mockup.css?v=14'); ?>" rel="stylesheet">
 </head>
 <body class="mobile-dashboard orders-mockup orders-live">
     <header class="dashboard-header">
@@ -29,6 +29,7 @@ $appBasePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 
     <main class="orders-main"
         id="order-app"
+        data-discount-enabled="<?php echo html_escape($discount_enabled ? '1' : '0'); ?>"
         data-representatives-url="<?php echo html_escape($appBasePath . '/index.php/mobile/dashboard/pedidos_representantes'); ?>"
         data-customers-url="<?php echo html_escape($appBasePath . '/index.php/mobile/dashboard/pedidos_clientes'); ?>"
         data-products-url="<?php echo html_escape($appBasePath . '/index.php/mobile/dashboard/pedidos_produtos'); ?>"
@@ -54,15 +55,21 @@ $appBasePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
             <nav class="order-steps" aria-label="Etapas do pedido">
                 <div class="order-step is-current" id="order-step-one" aria-current="step">
                     <span>1</span>
-                    <strong>Pedido</strong>
+                    <strong>Dados</strong>
                 </div>
                 <span class="step-connector" aria-hidden="true"></span>
                 <div class="order-step" id="order-step-two">
                     <span>2</span>
-                    <strong>Revisão e gravação</strong>
+                    <strong>Produtos</strong>
+                </div>
+                <span class="step-connector" aria-hidden="true"></span>
+                <div class="order-step" id="order-step-three">
+                    <span>3</span>
+                    <strong>Entrega</strong>
                 </div>
             </nav>
 
+            <div id="step-panel-one" class="order-step-panel">
             <section class="order-card" aria-labelledby="representative-heading">
                 <div class="order-section-heading">
                     <span class="section-number">01</span>
@@ -119,6 +126,15 @@ $appBasePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
                 </div>
             </section>
 
+                <div class="orders-actions">
+                    <span></span>
+                    <button class="primary-action" id="step-one-next" type="button">
+                        Próximo <span aria-hidden="true">&rarr;</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="step-panel-two" class="order-step-panel" hidden>
             <section class="order-card" aria-labelledby="products-heading">
                 <div class="order-section-heading">
                     <span class="section-number">04</span>
@@ -139,26 +155,78 @@ $appBasePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
                 </div>
             </section>
 
+            <section class="order-summary" aria-labelledby="step-two-summary-heading">
+                <div>
+                    <h3 id="step-two-summary-heading">Resumo do pedido</h3>
+                    <p data-order-summary-count>0 itens · 0 produtos</p>
+                </div>
+                <strong data-order-summary-total>R$ 0,00</strong>
+            </section>
+
+                <div class="orders-actions">
+                    <button class="secondary-action" id="step-two-back" type="button">
+                        <span aria-hidden="true">&larr;</span> Voltar
+                    </button>
+                    <button class="primary-action" id="step-two-next" type="button">
+                        Próximo <span aria-hidden="true">&rarr;</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="step-panel-three" class="order-step-panel" hidden>
+                <section class="order-card" aria-labelledby="delivery-heading">
+                    <div class="order-section-heading">
+                        <span class="section-number">05</span>
+                        <div>
+                            <h3 id="delivery-heading">Entrega e observações</h3>
+                            <p>Informe a data de entrega e observações para o pedido.</p>
+                        </div>
+                    </div>
+                    <label class="mockup-label" for="delivery-date">Data de entrega</label>
+                    <input class="order-text-input" id="delivery-date" name="delivery_date"
+                        type="date" min="<?php echo html_escape(date('Y-m-d')); ?>"
+                        value="<?php echo html_escape(date('Y-m-d')); ?>" required>
+
+                    <div class="order-observations">
+                        <div>
+                            <label class="mockup-label" for="observ-1">Observação 1</label>
+                            <input class="order-text-input" id="observ-1" name="observ_1"
+                                type="text" maxlength="80">
+                        </div>
+                        <div>
+                            <label class="mockup-label" for="observ-2">Observação 2</label>
+                            <input class="order-text-input" id="observ-2" name="observ_2"
+                                type="text" maxlength="80">
+                        </div>
+                        <div>
+                            <label class="mockup-label" for="observ-3">Observação 3</label>
+                            <input class="order-text-input" id="observ-3" name="observ_3"
+                                type="text" maxlength="80">
+                        </div>
+                    </div>
+                </section>
+
             <section class="order-summary" aria-labelledby="summary-heading">
                 <div>
                     <h3 id="summary-heading">Resumo do pedido</h3>
-                    <p id="order-summary-count">0 itens · 0 produtos</p>
+                    <p data-order-summary-count>0 itens · 0 produtos</p>
                 </div>
-                <strong id="order-summary-total">R$ 0,00</strong>
+                <strong data-order-summary-total>R$ 0,00</strong>
             </section>
 
             <div class="orders-actions">
-                <a class="secondary-action" href="<?php echo html_escape($appBasePath . '/index.php/mobile/dashboard'); ?>">
-                    Cancelar
-                </a>
+                <button class="secondary-action" id="step-three-back" type="button">
+                    <span aria-hidden="true">&larr;</span> Voltar
+                </button>
                 <button class="primary-action" id="save-order" type="submit" disabled>
                     Salvar pedido <span aria-hidden="true">&rarr;</span>
                 </button>
+            </div>
             </div>
         </form>
     </main>
 
     <footer class="dashboard-footer">ForçaV · O pedido será gravado como pendente</footer>
-    <script src="<?php echo html_escape($appBasePath . '/js/mobile-orders.js?v=3'); ?>" defer></script>
+    <script src="<?php echo html_escape($appBasePath . '/js/mobile-orders.js?v=10'); ?>" defer></script>
 </body>
 </html>

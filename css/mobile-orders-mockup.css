@@ -107,6 +107,20 @@
     font-size: 15.4px;
 }
 
+.order-step-panel[hidden] {
+    display: none;
+}
+
+.order-step.is-complete {
+    color: #15803d;
+}
+
+.order-step.is-complete > span {
+    border-color: #16a34a;
+    background: #16a34a;
+    color: #fff;
+}
+
 .order-step > span {
     display: grid;
     width: 25px;
@@ -188,6 +202,29 @@
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
+}
+
+.order-text-input {
+    width: 100%;
+    min-height: 43px;
+    margin-bottom: 15px;
+    padding: 8px 10px;
+    border: 1px solid #dce3ea;
+    border-radius: 8px;
+    background: #fff;
+    color: #34495e;
+    font: inherit;
+    font-size: 16.8px;
+}
+
+.order-text-input:focus {
+    border-color: #7aa4c4;
+    outline: 2px solid rgba(37, 99, 235, 0.12);
+}
+
+.order-observations {
+    display: grid;
+    gap: 2px;
 }
 
 .mockup-search {
@@ -301,6 +338,7 @@
 .mock-product {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 10px;
     padding: 11px 0;
     border-top: 1px solid #edf0f2;
@@ -331,6 +369,13 @@
     gap: 3px;
 }
 
+.product-controls {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 10px;
+}
+
 .product-details strong {
     color: #34495e;
     font-size: 15.4px;
@@ -348,33 +393,123 @@
 }
 
 .quantity-control {
+    display: grid;
+    flex: 1 1 140px;
+    min-width: 130px;
+    justify-items: center;
+    gap: 4px;
+    padding: 6px 8px;
+    border: 1px solid #f0edf5;
+    border-radius: 12px;
+    background: #faf9fc;
+}
+
+.quantity-control label,
+.discount-control label {
+    color: #64748b;
+    font-size: 12px;
+}
+
+.quantity-stepper {
     display: flex;
-    flex: 0 0 auto;
     align-items: center;
     gap: 8px;
-    padding: 4px;
-    border: 1px solid #e3e8ee;
-    border-radius: 8px;
 }
 
-.quantity-control button {
+.quantity-stepper button {
     display: grid;
-    width: 25px;
-    height: 25px;
+    width: 24px;
+    height: 24px;
     place-items: center;
     border: 0;
-    border-radius: 6px;
-    background: #f2f4f7;
-    color: #42627a;
-    font-size: 21px;
+    border-radius: 50%;
+    background: transparent;
+    color: #8061a3;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
 }
 
-.quantity-control span {
-    min-width: 12px;
+.quantity-stepper button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.quantity-stepper button:focus-visible {
+    outline: 2px solid #8061a3;
+    outline-offset: 1px;
+}
+
+.quantity-stepper input {
+    width: 52px;
+    min-height: 28px;
+    padding: 2px 0;
+    border: 0;
+    border-radius: 5px;
+    outline: 0;
+    background: transparent;
     color: #34495e;
-    font-size: 15.4px;
-    font-weight: 700;
+    font: inherit;
+    font-size: 16px;
+    font-weight: 600;
     text-align: center;
+}
+
+.quantity-stepper input:focus {
+    background: #fff;
+    box-shadow: 0 0 0 1px #d8cce6;
+}
+
+.discount-control {
+    display: grid;
+    flex: 0 1 100px;
+    grid-template-columns: 48px auto;
+    align-items: center;
+    justify-items: center;
+    gap: 4px;
+    padding: 6px 8px;
+    border: 1px solid #f0edf5;
+    border-radius: 12px;
+    background: #faf9fc;
+}
+
+.discount-control label {
+    grid-column: 1 / -1;
+    text-align: center;
+}
+
+.discount-control input {
+    width: 48px;
+    min-height: 28px;
+    padding: 3px 4px;
+    border: 1px solid #e3e8ee;
+    border-radius: 6px;
+    background: #fff;
+    color: #34495e;
+    font: inherit;
+    font-size: 15px;
+    text-align: center;
+}
+
+.discount-control input::-webkit-inner-spin-button,
+.discount-control input::-webkit-outer-spin-button {
+    margin: 0;
+    appearance: none;
+}
+
+.discount-control input {
+    appearance: textfield;
+}
+
+.discount-control input:disabled {
+    background: #f1f3f5;
+    color: #8492a0;
+    cursor: not-allowed;
+}
+
+.discount-control span {
+    color: #64748b;
+    font-size: 14px;
 }
 
 .order-summary {
@@ -482,16 +617,33 @@
 .order-search-result {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: 10px;
     padding: 10px;
     background: #fff;
 }
 
+.order-result-image {
+    display: block;
+    flex: 0 0 88px;
+    width: 88px;
+    height: 88px;
+    border: 1px solid #edf0f2;
+    border-radius: 8px;
+    background: #f8fafc;
+    object-fit: contain;
+}
+
+.order-result-image.is-unavailable {
+    visibility: hidden;
+}
+
 .order-result-copy {
     display: grid;
+    flex: 1 1 auto;
     min-width: 0;
     gap: 3px;
+    text-align: left;
 }
 
 .order-result-copy strong {
@@ -517,6 +669,10 @@
     color: #174a78;
     font-size: 15.4px;
     font-weight: 700;
+}
+
+.order-result-button {
+    margin-left: auto;
 }
 
 .selected-customer > strong,
@@ -573,39 +729,6 @@
     font-size: 16.8px;
 }
 
-.quantity-control {
-    flex-wrap: wrap;
-    justify-content: flex-end;
-}
-
-.quantity-control label {
-    width: 100%;
-    color: #8492a0;
-    font-size: 12.6px;
-    text-align: right;
-}
-
-.quantity-control input {
-    width: 70px;
-    min-height: 30px;
-    padding: 3px 5px;
-    border: 1px solid #dce3ea;
-    border-radius: 6px;
-    color: #34495e;
-    font: inherit;
-    font-size: 15.4px;
-    text-align: right;
-}
-
-.quantity-control .remove-order-item {
-    min-height: 27px;
-    padding: 0 7px;
-    color: #9f1239;
-    font-size: 28px;
-    font-weight: 700;
-    line-height: 1;
-}
-
 .orders-live .primary-action:disabled {
     background: #9ab2c5;
     cursor: not-allowed;
@@ -627,26 +750,19 @@
     }
 
     .order-step {
-        gap: 5px;
-        font-size: 12.6px;
+        gap: 4px;
+        font-size: 11.2px;
     }
 
     .order-step > span {
+        flex: 0 0 22px;
         width: 22px;
         height: 22px;
     }
 
     .step-connector {
-        margin: 0 5px;
-    }
-
-    .quantity-control {
-        gap: 4px;
-    }
-
-    .quantity-control button {
-        width: 22px;
-        height: 22px;
+        min-width: 8px;
+        margin: 0 4px;
     }
 
     .secondary-action,
@@ -661,15 +777,22 @@
 
     .mock-product {
         align-items: flex-start;
-        flex-wrap: wrap;
     }
 
     .product-details {
         flex-basis: calc(100% - 55px);
     }
 
-    .quantity-control {
-        margin-left: 49px;
+    .product-controls {
+        width: 100%;
+        margin-left: 0;
+        justify-content: space-between;
+        gap: 6px;
+    }
+
+    .quantity-control,
+    .discount-control {
+        padding: 6px 8px;
     }
 }
 

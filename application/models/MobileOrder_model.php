@@ -3,6 +3,40 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 class MobileOrder_model extends CI_Model
 {
+    public function isDiscountFieldEnabled()
+    {
+        $query = $this->db->query(
+            'SELECT FIRST 1 LIB_CAMP_DCT_FV FROM CONFIG_SYS'
+        );
+        $rows = $this->mapRows($query, 'discount configuration lookup');
+        if (count($rows) === 0 || !is_numeric($rows[0]['LIB_CAMP_DCT_FV'])) {
+            log_message('error', 'Mobile order discount configuration is missing or invalid.');
+            throw new RuntimeException('The mobile order discount configuration is unavailable.');
+        }
+
+        $enabled = (float) $rows[0]['LIB_CAMP_DCT_FV'];
+        if ($enabled !== 0.0 && $enabled !== 1.0) {
+            log_message('error', 'Mobile order discount configuration has an unsupported value.');
+            throw new RuntimeException('The mobile order discount configuration is invalid.');
+        }
+
+        return $enabled === 1.0;
+    }
+
+    public function getProductImageRepository()
+    {
+        $query = $this->db->query(
+            'SELECT FIRST 1 WEB_IMAGE FROM CONFIG_SYS'
+        );
+        $rows = $this->mapRows($query, 'product image repository lookup', array('WEB_IMAGE'));
+        if (count($rows) === 0) {
+            log_message('error', 'Mobile order product image repository configuration is missing.');
+            throw new RuntimeException('The product image repository configuration is unavailable.');
+        }
+
+        return isset($rows[0]['WEB_IMAGE']) ? trim((string) $rows[0]['WEB_IMAGE']) : '';
+    }
+
     public function getRepresentatives()
     {
         $query = $this->db->query(
@@ -260,7 +294,16 @@ class MobileOrder_model extends CI_Model
         );
     }
 
-    public function createOrder($customerId, $items, $conditionId, $paymentMethodId, $orderHash)
+    public function createOrder(
+        $customerId,
+        $items,
+        $conditionId,
+        $paymentMethodId,
+        $orderHash,
+        $deliveryDate,
+        $observations,
+        $userName
+    )
     {
         if (!$this->db->trans_begin()) {
             $this->logDatabaseError('order transaction start');
@@ -272,6 +315,15 @@ class MobileOrder_model extends CI_Model
             if ($existingOrderId !== NULL) {
                 $this->commitTransaction();
                 return array('id' => $existingOrderId, 'duplicate' => TRUE);
+            }
+
+            $discountFieldEnabled = $this->isDiscountFieldEnabled();
+            if (!$discountFieldEnabled) {
+                foreach ($items as $item) {
+                    if ((float) $item['discount'] !== 0.0) {
+                        throw new DomainException('O desconto está desabilitado para pedidos neste sistema.');
+                    }
+                }
             }
 
             $customer = $this->getCustomer($customerId);
@@ -304,7 +356,8 @@ class MobileOrder_model extends CI_Model
                 }
 
                 $quantity = (float) $item['quantity'];
-                $total += round($price * $quantity, 2);
+                $discount = (float) $item['discount'];
+                $total += round($price * $quantity * (100 - $discount) / 100, 2);
             }
             $total = round($total, 2);
 
@@ -320,6 +373,8 @@ class MobileOrder_model extends CI_Model
                 );
             }
 
+            $auditObservation = $this->buildOrderAuditObservation($userName, $observations[2]);
+
             $orderId = $this->getNextOrderId();
             $this->execute(
                 'EXECUTE PROCEDURE SP_INS_PEDIDO(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);',
@@ -329,14 +384,14 @@ class MobileOrder_model extends CI_Model
                     (int) $customer['ID_REP'],
                     1,
                     date('Y-m-d'),
-                    date('Y-m-d'),
+                    $deliveryDate,
                     99,
                     $total,
                     $total,
                     0,
-                    '',
-                    '',
-                    '',
+                    $observations[0],
+                    $observations[1],
+                    $auditObservation['text'],
                     (string) $orderId,
                     $orderHash,
                     0
@@ -354,7 +409,8 @@ class MobileOrder_model extends CI_Model
                 $price = round((float) $product['PRECO'], 2);
                 $itemHash = hash(
                     'sha256',
-                    $orderHash . '|' . $storedOrderId . '|' . $item['id'] . '|' . $index
+                    $orderHash . '|' . $storedOrderId . '|' . $item['id'] . '|'
+                    . $item['quantity'] . '|' . $item['discount'] . '|' . $index
                 );
                 $this->execute(
                     'EXECUTE PROCEDURE SP_INS_ITEM_PED(?, ?, ?, ?, ?, ?, ?, ?, ?);',
@@ -366,7 +422,7 @@ class MobileOrder_model extends CI_Model
                         (float) $item['quantity'],
                         $price,
                         $price,
-                        0,
+                        (float) $item['discount'],
                         $itemHash
                     ),
                     'order item insert'
@@ -388,7 +444,8 @@ class MobileOrder_model extends CI_Model
             return array(
                 'id' => $storedOrderId,
                 'duplicate' => FALSE,
-                'total' => $total
+                'total' => $total,
+                'observation_truncated' => $auditObservation['truncated']
             );
         } catch (Exception $exception) {
             $this->db->trans_rollback();
@@ -405,6 +462,60 @@ class MobileOrder_model extends CI_Model
         }
 
         return NULL;
+    }
+
+    private function buildOrderAuditObservation($userName, $existingObservation)
+    {
+        if (!is_string($userName) || trim($userName) === '') {
+            throw new DomainException('Não foi possível identificar o usuário para registrar o pedido.');
+        }
+
+        $userName = $this->toUtf8($userName);
+        $prefix = 'Pedido criado por "' . $userName . '" em "' . $this->getDatabaseTimestamp() . '"';
+        $prefix = $this->toDatabaseEncoding($prefix);
+        $observation = $this->toDatabaseEncoding($this->toUtf8($existingObservation));
+        $availableLength = 80 - strlen($prefix) - ($observation === '' ? 0 : 1);
+        if ($availableLength < 0) {
+            throw new DomainException('O nome do usuário é longo demais para registrar a criação do pedido.');
+        }
+
+        $truncated = strlen($observation) > $availableLength;
+        if ($truncated) {
+            $observation = substr($observation, 0, $availableLength);
+        }
+
+        return array(
+            'text' => $prefix . ($observation === '' ? '' : ' ' . $observation),
+            'truncated' => $truncated
+        );
+    }
+
+    private function getDatabaseTimestamp()
+    {
+        $query = $this->db->query(
+            'SELECT CURRENT_TIMESTAMP AS SERVER_NOW FROM RDB$DATABASE'
+        );
+        $rows = $this->mapRows($query, 'database timestamp lookup');
+        $serverNow = isset($rows[0]['SERVER_NOW']) ? trim($rows[0]['SERVER_NOW']) : '';
+
+        if (preg_match(
+            '/\A(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})(?:[.,]\d+)?\z/',
+            $serverNow,
+            $matches
+        ) !== 1) {
+            log_message('error', 'Mobile order database timestamp has an invalid format.');
+            throw new RuntimeException('The database timestamp is invalid.');
+        }
+
+        return sprintf(
+            '%02d/%02d/%02d %02d:%02d:%02d',
+            (int) $matches[3],
+            (int) $matches[2],
+            (int) substr($matches[1], -2),
+            (int) $matches[4],
+            (int) $matches[5],
+            (int) $matches[6]
+        );
     }
 
     private function getNextOrderId()

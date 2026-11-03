@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#145c46">
     <title>ForçaV - Acesso</title>
-    <link href="<?php echo html_escape($appBasePath . '/css/mobile.css?v=4'); ?>" rel="stylesheet">
+    <link href="<?php echo html_escape($appBasePath . '/css/mobile.css?v=6'); ?>" rel="stylesheet">
 </head>
 <body class="mobile-page">
     <main class="auth-shell">

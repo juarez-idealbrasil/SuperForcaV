@@ -172,7 +172,7 @@ select {
     padding: 20px clamp(12px, 3vw, 28px) 30px;
 }
 
-.filters {
+.filter-menu .filters {
     position: fixed;
     z-index: 52;
     top: 0;
@@ -198,9 +198,47 @@ select {
     transition: transform 180ms ease, visibility 180ms ease;
 }
 
-.filter-menu[open] .filters {
+.filter-menu[open] > .filters {
     visibility: visible;
     transform: translateX(0);
+}
+
+.filter-menu .filters[hidden] {
+    display: none;
+}
+
+.filter-options {
+    display: grid;
+    gap: 14px;
+}
+
+.filter-options > summary {
+    list-style: none;
+}
+
+.filter-options > summary::-webkit-details-marker {
+    display: none;
+}
+
+.filter-options > summary::marker {
+    content: "";
+}
+
+.filters-menu-link {
+    color: #2563eb;
+    cursor: pointer;
+}
+
+.filter-options[open] .orders-menu-arrow {
+    transform: rotate(90deg);
+}
+
+.filter-options-form {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-content: start;
+    gap: 16px;
+    margin: 0;
 }
 
 .filter-panel-heading {
@@ -211,9 +249,15 @@ select {
 }
 
 .filter-panel-heading h2 {
+    flex: 1 1 auto;
     margin: 0;
     color: #0b3c5d;
     font-size: 19px;
+}
+
+.menu-logout-form {
+    flex: 0 0 auto;
+    margin: 0;
 }
 
 .orders-menu-link {
@@ -229,6 +273,47 @@ select {
     font-size: 14px;
     font-weight: 700;
     text-decoration: none;
+}
+
+.menu-logout-button {
+    display: flex;
+    width: 100%;
+    min-height: 48px;
+    align-items: center;
+    gap: 11px;
+    padding: 0 12px;
+    border: 1px solid #f1d5d5;
+    border-radius: 9px;
+    background: #fff7f7;
+    color: #a33b3b;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+}
+
+.menu-logout-button-top {
+    width: auto;
+    min-height: 40px;
+    padding: 0 10px;
+}
+
+.menu-logout-button:focus-visible {
+    outline: 3px solid rgba(163, 59, 59, 0.25);
+    outline-offset: 2px;
+}
+
+.menu-logout-icon {
+    display: grid;
+    flex: 0 0 27px;
+    width: 27px;
+    height: 27px;
+    place-items: center;
+    border-radius: 7px;
+    background: #fee2e2;
+    color: #b42323;
+    font-size: 21px;
+    line-height: 1;
 }
 
 .orders-menu-link:focus-visible {
@@ -257,11 +342,14 @@ select {
 }
 
 .filter-close {
-    display: grid;
-    flex: 0 0 40px;
-    width: 40px;
+    display: inline-flex;
+    flex: 0 0 auto;
+    min-width: 40px;
     height: 40px;
-    place-items: center;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 9px;
     border: 1px solid #dce3ea;
     border-radius: 9px;
     background: #fff;
@@ -269,6 +357,11 @@ select {
     font-size: 25px;
     line-height: 1;
     cursor: pointer;
+}
+
+.filter-close span + span {
+    font-size: 13px;
+    font-weight: 650;
 }
 
 .filter {
@@ -748,7 +841,7 @@ select {
         font-size: 12px;
     }
 
-    .filters {
+    .filter-menu .filters {
         gap: 14px;
         padding: 20px;
     }

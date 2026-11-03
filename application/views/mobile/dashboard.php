@@ -43,7 +43,7 @@ $formatChange = function ($change) {
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#0b3c5d">
     <title>ForçaV - Visão Geral</title>
-    <link href="<?php echo html_escape($appBasePath . '/css/mobile-dashboard.css?v=filters-menu-5'); ?>" rel="stylesheet">
+    <link href="<?php echo html_escape($appBasePath . '/css/mobile-dashboard.css?v=filters-menu-10'); ?>" rel="stylesheet">
 </head>
 <body class="mobile-dashboard">
     <header class="dashboard-header">
@@ -59,85 +59,104 @@ $formatChange = function ($change) {
             <details class="filter-menu" id="dashboard-filter-menu">
                 <summary class="filter-menu-toggle">
                     <span class="hamburger-icon" aria-hidden="true"><span></span></span>
-                    <span>Filtros</span>
+                    <span>Menu</span>
                 </summary>
-                <button type="button" class="filter-backdrop" aria-label="Fechar filtros"></button>
-                <form class="filters" method="get" action="<?php echo html_escape($appBasePath . '/index.php/mobile/dashboard'); ?>">
+                <button type="button" class="filter-backdrop" aria-label="Fechar menu"></button>
+                <div class="filters">
                     <div class="filter-panel-heading">
-                        <h2>Filtros do painel</h2>
-                        <button type="button" class="filter-close" aria-label="Fechar filtros">&times;</button>
+                        <h2>Menu do painel</h2>
+                        <form class="menu-logout-form" method="post"
+                            action="<?php echo html_escape($appBasePath . '/index.php/mobile/auth/logout'); ?>">
+                            <button type="submit" class="menu-logout-button menu-logout-button-top">
+                                <span class="menu-logout-icon" aria-hidden="true">&times;</span>
+                                <span>Sair</span>
+                            </button>
+                        </form>
+                        <button type="button" class="filter-close" aria-label="Fechar menu">
+                            <span aria-hidden="true">&times;</span>
+                            <span>Fechar</span>
+                        </button>
                     </div>
                     <a class="orders-menu-link" href="<?php echo html_escape($appBasePath . '/index.php/mobile/dashboard/pedidos'); ?>">
                         <span class="orders-menu-icon" aria-hidden="true">&#43;</span>
                         <span>Pedidos</span>
                         <span class="orders-menu-arrow" aria-hidden="true">&rsaquo;</span>
                     </a>
-                    <div class="filter">
-                        <label for="selectEmpresa">Empresa</label>
-                        <select id="selectEmpresa" name="empresa" required>
-                            <?php foreach ($companies as $company): ?>
-                                <option value="<?php echo (int) $company['ID_EMP']; ?>"
-                                    <?php echo (int) $company['ID_EMP'] === $company_id ? 'selected' : ''; ?>>
-                                    <?php echo html_escape($company['RAZ_SOC']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div class="filter-select-range">
-                        <div class="filter">
-                            <label for="selectEquipe">Equipe</label>
-                            <select id="selectEquipe" name="equipe">
-                                <option value="">Todas as equipes</option>
-                                <?php foreach ($filter_options['teams'] as $team): ?>
-                                    <option value="<?php echo (int) $team['ID_FILTRO']; ?>"
-                                        <?php echo (int) $team['ID_FILTRO'] === $team_id ? 'selected' : ''; ?>>
-                                        <?php echo html_escape($team['NOME']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="filter">
-                            <label for="selectRepresentante">Representante</label>
-                            <select id="selectRepresentante" name="representante">
-                                <option value="">Todos os representantes</option>
-                                <?php foreach ($filter_options['representatives'] as $representative): ?>
-                                    <option value="<?php echo (int) $representative['ID_FILTRO']; ?>"
-                                        <?php echo (int) $representative['ID_FILTRO'] === $representative_id ? 'selected' : ''; ?>>
-                                        <?php echo html_escape($representative['NOME']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="filter">
-                        <label for="selectCliente">Cliente</label>
-                        <select id="selectCliente" name="cliente">
-                            <option value="">Todos os clientes</option>
-                            <?php foreach ($filter_options['customers'] as $customer): ?>
-                                <option value="<?php echo (int) $customer['ID_FILTRO']; ?>"
-                                    <?php echo (int) $customer['ID_FILTRO'] === $customer_id ? 'selected' : ''; ?>>
-                                    <?php echo html_escape($customer['NOME']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div class="filter-date-range">
-                        <div class="filter">
-                            <label for="dataIni">Período inicial</label>
-                            <input id="dataIni" name="data_ini" type="date" value="<?php echo html_escape($start_date); ?>" required>
-                        </div>
-                        <div class="filter">
-                            <label for="dataFim">Período final</label>
-                            <input id="dataFim" name="data_fim" type="date" value="<?php echo html_escape($end_date); ?>" required>
-                        </div>
-                    </div>
-                    <p class="filter-help">Os filtros de representante, equipe e cliente são aplicados aos indicadores, gráficos, rankings e análise de clientes.</p>
-                    <button type="submit" class="search-button">Pesquisar</button>
-                </form>
+                    <details class="filter-options" id="dashboard-filter-options">
+                        <summary class="orders-menu-link filters-menu-link">
+                            <span class="orders-menu-icon" aria-hidden="true">&#43;</span>
+                            <span>Filtros</span>
+                            <span class="orders-menu-arrow" aria-hidden="true">&rsaquo;</span>
+                        </summary>
+                        <form class="filter-options-form" method="get"
+                            action="<?php echo html_escape($appBasePath . '/index.php/mobile/dashboard'); ?>">
+                            <div class="filter">
+                                <label for="selectEmpresa">Empresa</label>
+                                <select id="selectEmpresa" name="empresa" required>
+                                    <?php foreach ($companies as $company): ?>
+                                        <option value="<?php echo (int) $company['ID_EMP']; ?>"
+                                            <?php echo (int) $company['ID_EMP'] === $company_id ? 'selected' : ''; ?>>
+                                            <?php echo html_escape($company['RAZ_SOC']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="filter-select-range">
+                                <div class="filter">
+                                    <label for="selectEquipe">Equipe</label>
+                                    <select id="selectEquipe" name="equipe">
+                                        <option value="">Todas as equipes</option>
+                                        <?php foreach ($filter_options['teams'] as $team): ?>
+                                            <option value="<?php echo (int) $team['ID_FILTRO']; ?>"
+                                                <?php echo (int) $team['ID_FILTRO'] === $team_id ? 'selected' : ''; ?>>
+                                                <?php echo html_escape($team['NOME']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="filter">
+                                    <label for="selectRepresentante">Representante</label>
+                                    <select id="selectRepresentante" name="representante">
+                                        <option value="">Todos os representantes</option>
+                                        <?php foreach ($filter_options['representatives'] as $representative): ?>
+                                            <option value="<?php echo (int) $representative['ID_FILTRO']; ?>"
+                                                <?php echo (int) $representative['ID_FILTRO'] === $representative_id ? 'selected' : ''; ?>>
+                                                <?php echo html_escape($representative['NOME']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="filter">
+                                <label for="selectCliente">Cliente</label>
+                                <select id="selectCliente" name="cliente">
+                                    <option value="">Todos os clientes</option>
+                                    <?php foreach ($filter_options['customers'] as $customer): ?>
+                                        <option value="<?php echo (int) $customer['ID_FILTRO']; ?>"
+                                            <?php echo (int) $customer['ID_FILTRO'] === $customer_id ? 'selected' : ''; ?>>
+                                            <?php echo html_escape($customer['NOME']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="filter-date-range">
+                                <div class="filter">
+                                    <label for="dataIni">Período inicial</label>
+                                    <input id="dataIni" name="data_ini" type="date"
+                                        value="<?php echo html_escape($start_date); ?>" required>
+                                </div>
+                                <div class="filter">
+                                    <label for="dataFim">Período final</label>
+                                    <input id="dataFim" name="data_fim" type="date"
+                                        value="<?php echo html_escape($end_date); ?>" required>
+                                </div>
+                            </div>
+                            <p class="filter-help">Os filtros de representante, equipe e cliente são aplicados aos indicadores, gráficos, rankings e análise de clientes.</p>
+                            <button type="submit" class="search-button">Pesquisar</button>
+                        </form>
+                    </details>
+                </div>
             </details>
-            <form method="post" action="<?php echo html_escape($appBasePath . '/index.php/mobile/auth/logout'); ?>">
-                <button type="submit" class="logout-button">Sair</button>
-            </form>
         </div>
     </header>
 
@@ -333,6 +352,6 @@ $formatChange = function ($change) {
     </main>
 
     <footer class="dashboard-footer">ForçaV · <?php echo date('Y'); ?></footer>
-    <script src="<?php echo html_escape($appBasePath . '/js/mobile-dashboard.js?v=filters-menu-5'); ?>"></script>
+    <script src="<?php echo html_escape($appBasePath . '/js/mobile-dashboard.js?v=filters-menu-7'); ?>"></script>
 </body>
 </html>

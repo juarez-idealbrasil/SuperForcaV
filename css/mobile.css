@@ -54,8 +54,8 @@ input {
 
 .auth-logo {
     display: block;
-    width: 100%;
-    max-width: none;
+    width: auto;
+    max-width: 100%;
     height: auto;
     margin: 0 auto;
     object-fit: contain;
@@ -138,12 +138,12 @@ p {
 
 .primary-button {
     margin-top: 14px;
-    background: #00b1cd;
+    background: #008f8b;
     color: #fff;
 }
 
 .primary-button:active {
-    background: #008ea4;
+    background: #006f6d;
 }
 
 .alert {

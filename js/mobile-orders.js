@@ -22,10 +22,28 @@
     var paymentMethodIdInput = document.getElementById('payment-method-id');
     var saveButton = document.getElementById('save-order');
     var message = document.getElementById('order-message');
-    var countSummary = document.getElementById('order-summary-count');
-    var totalSummary = document.getElementById('order-summary-total');
+    var countSummaries = document.querySelectorAll('[data-order-summary-count]');
+    var totalSummaries = document.querySelectorAll('[data-order-summary-total]');
+    var stepPanels = [
+        document.getElementById('step-panel-one'),
+        document.getElementById('step-panel-two'),
+        document.getElementById('step-panel-three')
+    ];
+    var stepIndicators = [
+        document.getElementById('order-step-one'),
+        document.getElementById('order-step-two'),
+        document.getElementById('order-step-three')
+    ];
+    var deliveryDateInput = document.getElementById('delivery-date');
+    var observationInputs = [
+        document.getElementById('observ-1'),
+        document.getElementById('observ-2'),
+        document.getElementById('observ-3')
+    ];
     var items = [];
     var customer = null;
+    var discountFieldEnabled = app.dataset.discountEnabled === '1';
+    var currentStep = 1;
     var isSaving = false;
     var isSaved = false;
     var customerTimer = null;
@@ -37,6 +55,13 @@
         return new Intl.NumberFormat('pt-BR', {
             style: 'currency',
             currency: 'BRL'
+        }).format(value);
+    }
+
+    function formatQuantity(value, useGrouping) {
+        return new Intl.NumberFormat('pt-BR', {
+            maximumFractionDigits: 3,
+            useGrouping: Boolean(useGrouping)
         }).format(value);
     }
 
@@ -52,9 +77,93 @@
         message.className = 'order-message';
     }
 
-    function makeSearchResult(label, detail, onClick, buttonLabel) {
+    function hasPaymentSelections() {
+        return Boolean(conditionSelect.value && paymentMethodSelect.value);
+    }
+
+    function updateProductSearchAccess() {
+        var canSearchProducts = Boolean(customer && hasPaymentSelections());
+        productSearch.disabled = !canSearchProducts;
+        productSearch.placeholder = !customer
+            ? 'Selecione um cliente primeiro'
+            : (canSearchProducts
+                ? 'Descrição ou código de barras'
+                : 'Informe condição e forma de pagamento');
+
+        if (!canSearchProducts) {
+            window.clearTimeout(productTimer);
+            productRequest += 1;
+            productSearch.value = '';
+            productResults.hidden = true;
+            productResults.textContent = '';
+        }
+    }
+
+    function setCurrentStep(step) {
+        currentStep = step;
+        stepPanels.forEach(function (panel, index) {
+            panel.hidden = index + 1 !== step;
+        });
+        stepIndicators.forEach(function (indicator, index) {
+            var stepNumber = index + 1;
+            indicator.classList.toggle('is-current', stepNumber === step);
+            indicator.classList.toggle('is-complete', stepNumber < step);
+            if (stepNumber === step) {
+                indicator.setAttribute('aria-current', 'step');
+            } else {
+                indicator.removeAttribute('aria-current');
+            }
+        });
+        updateSaveButton();
+        window.scrollTo(0, 0);
+    }
+
+    function goToStep(step) {
+        if (step > currentStep && step >= 2 && !customer) {
+            showMessage('Selecione um cliente antes de continuar.', 'error');
+            customerSearch.focus();
+            return;
+        }
+        if (step > currentStep && step >= 2 && !hasPaymentSelections()) {
+            showMessage('Selecione a condição e a forma de pagamento antes de continuar.', 'error');
+            if (!conditionSelect.value) {
+                conditionSelect.focus();
+            } else {
+                paymentMethodSelect.focus();
+            }
+            return;
+        }
+        if (step > currentStep && step >= 3 && items.length === 0) {
+            showMessage('Adicione ao menos um produto antes de continuar.', 'error');
+            productSearch.focus();
+            return;
+        }
+
+        hideMessage();
+        setCurrentStep(step);
+    }
+
+    function makeSearchResult(label, detail, onClick, buttonLabel, imageData) {
         var row = document.createElement('div');
         row.className = 'order-search-result';
+
+        if (imageData) {
+            var image = document.createElement('img');
+            image.className = 'order-result-image';
+            image.src = imageData.url;
+            image.alt = '';
+            image.loading = 'lazy';
+            image.addEventListener('error', function () {
+                if (imageData.fallbackUrl && image.src !== imageData.fallbackUrl) {
+                    image.src = imageData.fallbackUrl;
+                    imageData.fallbackUrl = '';
+                    return;
+                }
+                image.classList.add('is-unavailable');
+                image.removeAttribute('src');
+            });
+            row.appendChild(image);
+        }
 
         var copy = document.createElement('span');
         copy.className = 'order-result-copy';
@@ -83,14 +192,11 @@
         customerIdInput.value = '';
         selectedCustomer.hidden = true;
         selectedCustomer.textContent = '';
-        productSearch.disabled = true;
-        productSearch.value = '';
-        productResults.hidden = true;
-        productResults.textContent = '';
         conditionSelect.disabled = true;
         paymentMethodSelect.disabled = true;
         conditionSelect.innerHTML = '<option value="">Selecione um cliente</option>';
         paymentMethodSelect.innerHTML = '<option value="">Selecione um cliente</option>';
+        updateProductSearchAccess();
         conditionIdInput.value = '';
         paymentMethodIdInput.value = '';
         items = [];
@@ -117,12 +223,11 @@
         selectedCustomer.appendChild(details);
         selectedCustomer.hidden = false;
 
-        productSearch.disabled = false;
-        productSearch.placeholder = 'Descrição ou código de barras';
         conditionSelect.disabled = true;
         paymentMethodSelect.disabled = true;
         conditionSelect.innerHTML = '<option value="">Carregando condições...</option>';
         paymentMethodSelect.innerHTML = '<option value="">Carregando formas...</option>';
+        updateProductSearchAccess();
         items = [];
         renderItems();
         loadPaymentOptions(result.id);
@@ -237,7 +342,11 @@
                     product.description,
                     'Cód. ' + (product.barcode || product.id) + ' · ' + currency(product.price),
                     function () { addProduct(product); },
-                    'Adicionar'
+                    'Adicionar',
+                    {
+                        url: product.image_url,
+                        fallbackUrl: product.fallback_image_url
+                    }
                 ));
             });
         }
@@ -278,17 +387,26 @@
     }
 
     function addProduct(product) {
+        if (!customer || !hasPaymentSelections()) {
+            updateProductSearchAccess();
+            showMessage('Informe a condição e a forma de pagamento antes de adicionar produtos.', 'error');
+            return;
+        }
+
         var existing = items.find(function (item) {
             return item.id === product.id;
         });
         if (existing) {
-            existing.quantity += 1;
+            if (existing.quantity + 1 <= 100000) {
+                existing.quantity += 1;
+            }
         } else {
             items.push({
                 id: product.id,
                 description: product.description,
                 price: Number(product.price),
-                quantity: 1
+                quantity: 1,
+                discount: 0
             });
         }
         hideMessage();
@@ -324,8 +442,8 @@
                 var unitPrice = document.createElement('span');
                 unitPrice.textContent = 'Preço do catálogo: ' + currency(item.price);
                 var lineTotal = document.createElement('b');
-                lineTotal.textContent = currency(
-                    Math.round(item.price * item.quantity * 100) / 100
+                lineTotal.textContent = 'Total do item: ' + currency(
+                    Math.round(item.price * item.quantity * (100 - item.discount)) / 100
                 );
                 details.appendChild(title);
                 details.appendChild(unitPrice);
@@ -335,40 +453,106 @@
                 quantity.className = 'quantity-control';
                 var quantityLabel = document.createElement('label');
                 quantityLabel.setAttribute('for', 'quantity-' + item.id);
-                quantityLabel.textContent = 'Qtd.';
+                quantityLabel.textContent = 'Quantidade';
+
+                var stepper = document.createElement('div');
+                stepper.className = 'quantity-stepper';
+
+                var decrease = document.createElement('button');
+                decrease.type = 'button';
+                decrease.className = 'quantity-decrease';
+                decrease.textContent = '−';
+                decrease.setAttribute('aria-label', 'Diminuir quantidade de ' + item.description);
+                decrease.addEventListener('click', function () {
+                    var newQuantity = Math.round((item.quantity - 1) * 1000) / 1000;
+                    if (newQuantity <= 0) {
+                        items.splice(index, 1);
+                    } else {
+                        items[index].quantity = newQuantity;
+                    }
+                    renderItems();
+                });
+
                 var quantityInput = document.createElement('input');
-                quantityInput.type = 'number';
+                quantityInput.type = 'text';
+                quantityInput.inputMode = 'decimal';
                 quantityInput.id = 'quantity-' + item.id;
-                quantityInput.min = '0.001';
-                quantityInput.step = '0.001';
-                quantityInput.value = String(item.quantity);
+                quantityInput.value = formatQuantity(item.quantity, false);
                 quantityInput.setAttribute('aria-label', 'Quantidade de ' + item.description);
                 quantityInput.addEventListener('change', function () {
-                    var newQuantity = Number(quantityInput.value);
+                    var rawQuantity = quantityInput.value.trim();
+                    if (!/^\d+(,\d{1,3})?$/.test(rawQuantity)) {
+                        quantityInput.value = formatQuantity(item.quantity, false);
+                        return;
+                    }
+                    var newQuantity = Number(rawQuantity.replace(',', '.'));
                     if (!Number.isFinite(newQuantity) || newQuantity <= 0 || newQuantity > 100000) {
-                        quantityInput.value = String(item.quantity);
+                        quantityInput.value = formatQuantity(item.quantity, false);
                         return;
                     }
                     items[index].quantity = newQuantity;
                     renderItems();
                 });
 
-                var remove = document.createElement('button');
-                remove.type = 'button';
-                remove.className = 'remove-order-item';
-                remove.textContent = '−';
-                remove.setAttribute('aria-label', 'Remover item do pedido');
-                remove.addEventListener('click', function () {
-                    items.splice(index, 1);
-                    renderItems();
+                var increase = document.createElement('button');
+                increase.type = 'button';
+                increase.className = 'quantity-increase';
+                increase.textContent = '+';
+                increase.setAttribute('aria-label', 'Aumentar quantidade de ' + item.description);
+                increase.disabled = item.quantity + 1 > 100000;
+                increase.addEventListener('click', function () {
+                    if (item.quantity + 1 <= 100000) {
+                        items[index].quantity = Math.round((item.quantity + 1) * 1000) / 1000;
+                        renderItems();
+                    }
                 });
 
                 quantity.appendChild(quantityLabel);
-                quantity.appendChild(quantityInput);
-                quantity.appendChild(remove);
+                stepper.appendChild(decrease);
+                stepper.appendChild(quantityInput);
+                stepper.appendChild(increase);
+                quantity.appendChild(stepper);
+
+                var controls = document.createElement('div');
+                controls.className = 'product-controls';
+                controls.appendChild(quantity);
+
+                var discount = document.createElement('div');
+                discount.className = 'discount-control';
+                var discountLabel = document.createElement('label');
+                discountLabel.setAttribute('for', 'discount-' + item.id);
+                discountLabel.textContent = 'Desconto';
+                var discountInput = document.createElement('input');
+                discountInput.type = 'number';
+                discountInput.id = 'discount-' + item.id;
+                discountInput.min = '0';
+                discountInput.max = '100';
+                discountInput.step = '0.01';
+                discountInput.value = String(item.discount);
+                discountInput.disabled = !discountFieldEnabled;
+                if (!discountFieldEnabled) {
+                    discountInput.title = 'Desconto desabilitado pela configuração do sistema.';
+                }
+                discountInput.setAttribute('aria-label', 'Desconto percentual de ' + item.description);
+                discountInput.addEventListener('change', function () {
+                    var newDiscount = Number(discountInput.value);
+                    if (!Number.isFinite(newDiscount) || newDiscount < 0 || newDiscount > 100) {
+                        discountInput.value = String(item.discount);
+                        return;
+                    }
+                    items[index].discount = Math.round(newDiscount * 100) / 100;
+                    renderItems();
+                });
+                var percentSign = document.createElement('span');
+                percentSign.textContent = '%';
+                discount.appendChild(discountLabel);
+                discount.appendChild(discountInput);
+                discount.appendChild(percentSign);
+                controls.appendChild(discount);
+
                 article.appendChild(symbol);
                 article.appendChild(details);
-                article.appendChild(quantity);
+                article.appendChild(controls);
                 orderItems.appendChild(article);
             });
         }
@@ -377,19 +561,27 @@
             return total + item.quantity;
         }, 0);
         var total = items.reduce(function (sum, item) {
-            return sum + Math.round(item.price * item.quantity * 100) / 100;
+            return sum + Math.round(item.price * item.quantity * (100 - item.discount)) / 100;
         }, 0);
-        countSummary.textContent = new Intl.NumberFormat('pt-BR', {
-            maximumFractionDigits: 3
-        }).format(totalQuantity) + ' itens · ' + items.length + ' produtos';
-        totalSummary.textContent = currency(total);
+        countSummaries.forEach(function (summary) {
+            summary.textContent = formatQuantity(totalQuantity, true)
+                + ' itens · ' + items.length + ' produtos';
+        });
+        totalSummaries.forEach(function (summary) {
+            summary.textContent = currency(total);
+        });
         itemsInput.value = JSON.stringify(items.map(function (item) {
-            return {id: item.id, quantity: item.quantity, price: item.price};
+            return {
+                id: item.id,
+                quantity: item.quantity,
+                price: item.price,
+                discount: item.discount
+            };
         }));
         updateSaveButton();
     }
 
-    function setOptions(select, options, defaultId, emptyLabel, labelBuilder) {
+    function setOptions(select, options, emptyLabel, labelBuilder) {
         select.textContent = '';
         var placeholder = document.createElement('option');
         placeholder.value = '';
@@ -400,9 +592,6 @@
             var element = document.createElement('option');
             element.value = String(option.id);
             element.textContent = labelBuilder(option);
-            if (Number(option.id) === Number(defaultId)) {
-                element.selected = true;
-            }
             select.appendChild(element);
         });
         select.disabled = options.length === 0;
@@ -428,7 +617,6 @@
                 setOptions(
                     conditionSelect,
                     data.conditions,
-                    data.default_condition_id,
                     'Selecione a condição',
                     function (condition) {
                         return condition.description + (condition.minimum_order > 0
@@ -439,10 +627,10 @@
                 setOptions(
                     paymentMethodSelect,
                     data.payment_methods,
-                    data.default_payment_method_id,
                     'Selecione a forma',
                     function (method) { return method.description;                     }
                 );
+                updateProductSearchAccess();
                 if (!conditionSelect.disabled) {
                     conditionSelect.focus();
                 } else if (!paymentMethodSelect.disabled) {
@@ -462,7 +650,10 @@
         conditionIdInput.value = conditionSelect.value;
         paymentMethodIdInput.value = paymentMethodSelect.value;
         saveButton.disabled = isSaving || isSaved || !customer || items.length === 0
-            || !conditionSelect.value || !paymentMethodSelect.value;
+            || !conditionSelect.value || !paymentMethodSelect.value
+            || currentStep !== 3 || !deliveryDateInput.value
+            || deliveryDateInput.value < deliveryDateInput.min
+            || observationInputs.some(function (input) { return input.value.length > 80; });
     }
 
     customerSearch.addEventListener('input', function () {
@@ -502,6 +693,10 @@
     });
 
     productSearch.addEventListener('input', function () {
+        if (productSearch.disabled || !hasPaymentSelections()) {
+            updateProductSearchAccess();
+            return;
+        }
         hideMessage();
         var term = productSearch.value.trim();
         window.clearTimeout(productTimer);
@@ -515,22 +710,54 @@
         }, 250);
     });
 
-    conditionSelect.addEventListener('change', updateSaveButton);
-    paymentMethodSelect.addEventListener('change', updateSaveButton);
+    conditionSelect.addEventListener('change', function () {
+        updateProductSearchAccess();
+        updateSaveButton();
+    });
+    paymentMethodSelect.addEventListener('change', function () {
+        updateProductSearchAccess();
+        updateSaveButton();
+    });
+
+    document.getElementById('step-one-next').addEventListener('click', function () {
+        goToStep(2);
+    });
+    document.getElementById('step-two-back').addEventListener('click', function () {
+        goToStep(1);
+    });
+    document.getElementById('step-two-next').addEventListener('click', function () {
+        goToStep(3);
+    });
+    document.getElementById('step-three-back').addEventListener('click', function () {
+        goToStep(2);
+    });
+    deliveryDateInput.addEventListener('change', updateSaveButton);
+    observationInputs.forEach(function (input) {
+        input.addEventListener('input', updateSaveButton);
+    });
 
     form.addEventListener('submit', function (event) {
         event.preventDefault();
         updateSaveButton();
         if (saveButton.disabled) {
+            if (currentStep !== 3) {
+                showMessage('Conclua as etapas anteriores antes de salvar o pedido.', 'error');
+            } else if (!deliveryDateInput.value || deliveryDateInput.value < deliveryDateInput.min) {
+                showMessage('Informe uma data de entrega igual ou posterior à data atual.', 'error');
+                deliveryDateInput.focus();
+            }
             return;
         }
 
         var total = items.reduce(function (sum, item) {
-            return sum + Math.round(item.price * item.quantity * 100) / 100;
+            return sum + Math.round(item.price * item.quantity * (100 - item.discount)) / 100;
         }, 0);
         if (!window.confirm(
             'Confirma salvar o pedido de ' + customer.name + ' no valor de '
-            + currency(total) + ' como pendente (status 99)?'
+            + currency(total) + ' para entrega em '
+            + new Intl.DateTimeFormat('pt-BR', {timeZone: 'UTC'}).format(
+                new Date(deliveryDateInput.value + 'T00:00:00Z')
+            ) + ' como pendente (status 99)?'
         )) {
             return;
         }
@@ -539,7 +766,12 @@
         saveButton.disabled = true;
         saveButton.textContent = 'Salvando pedido...';
         itemsInput.value = JSON.stringify(items.map(function (item) {
-            return {id: item.id, quantity: item.quantity, price: item.price};
+            return {
+                id: item.id,
+                quantity: item.quantity,
+                price: item.price,
+                discount: item.discount
+            };
         }));
         conditionIdInput.value = conditionSelect.value;
         paymentMethodIdInput.value = paymentMethodSelect.value;
@@ -563,14 +795,14 @@
             })
             .then(function (data) {
                 isSaved = true;
-                document.getElementById('order-step-two').classList.add('is-current');
-                document.getElementById('order-step-one').classList.remove('is-current');
-                document.getElementById('order-step-one').removeAttribute('aria-current');
-                document.getElementById('order-step-two').setAttribute('aria-current', 'step');
+                setCurrentStep(3);
                 showMessage(
                     data.duplicate
                         ? 'O pedido #' + data.order_id + ' já havia sido gravado. Nenhuma duplicidade foi criada.'
-                        : 'Pedido #' + data.order_id + ' salvo com sucesso como pendente (status 99).',
+                        : 'Pedido #' + data.order_id + ' salvo com sucesso como pendente (status 99).'
+                            + (data.observation_truncated
+                                ? ' A observação 3 foi encurtada para incluir o usuário e o horário.'
+                                : ''),
                     'success'
                 );
                 saveButton.textContent = 'Pedido #' + data.order_id + ' salvo';
@@ -582,6 +814,10 @@
                 orderItems.querySelectorAll('button, input').forEach(function (control) {
                     control.disabled = true;
                 });
+                deliveryDateInput.disabled = true;
+                observationInputs.forEach(function (input) {
+                    input.disabled = true;
+                });
             })
             .catch(function (error) {
                 showMessage(error.message, 'error');
@@ -591,6 +827,7 @@
             });
     });
 
+    setCurrentStep(1);
     renderItems();
     loadRepresentatives();
 }());
