@@ -11,7 +11,7 @@ $appBasePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
     <meta name="theme-color" content="#0b3c5d">
     <title>ForçaV - Novo pedido</title>
     <link href="<?php echo html_escape($appBasePath . '/css/mobile-dashboard.css?v=orders-live-1'); ?>" rel="stylesheet">
-    <link href="<?php echo html_escape($appBasePath . '/css/mobile-orders-mockup.css?v=20'); ?>" rel="stylesheet">
+    <link href="<?php echo html_escape($appBasePath . '/css/mobile-orders-mockup.css?v=23'); ?>" rel="stylesheet">
 </head>
 <body class="mobile-dashboard orders-mockup orders-live">
     <header class="dashboard-header">
@@ -256,7 +256,21 @@ $appBasePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
         </form>
     </main>
 
+    <dialog class="order-confirmation" id="order-confirmation"
+        aria-labelledby="order-confirmation-title" aria-describedby="order-confirmation-message">
+        <div class="order-confirmation-content">
+            <span class="order-confirmation-icon" aria-hidden="true">?</span>
+            <h2 id="order-confirmation-title">Confirme o pedido?</h2>
+            <p class="order-confirmation-attention">Atenção</p>
+            <p class="order-confirmation-message" id="order-confirmation-message"></p>
+            <form method="dialog" class="order-confirmation-actions">
+                <button class="order-confirmation-save" type="submit" value="save">Salvar</button>
+                <button class="order-confirmation-cancel" type="submit" value="cancel">Cancelar</button>
+            </form>
+        </div>
+    </dialog>
+
     <footer class="dashboard-footer">ForçaV · O pedido será gravado como pendente</footer>
-    <script src="<?php echo html_escape($appBasePath . '/js/mobile-orders.js?v=16'); ?>" defer></script>
+    <script src="<?php echo html_escape($appBasePath . '/js/mobile-orders.js?v=19'); ?>" defer></script>
 </body>
 </html>

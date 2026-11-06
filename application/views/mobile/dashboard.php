@@ -43,9 +43,9 @@ $formatChange = function ($change) {
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#0b3c5d">
     <title>ForçaV - Visão Geral</title>
-    <link href="<?php echo html_escape($appBasePath . '/css/mobile-dashboard.css?v=filters-menu-10'); ?>" rel="stylesheet">
+    <link href="<?php echo html_escape($appBasePath . '/css/mobile-dashboard.css?v=filters-menu-20'); ?>" rel="stylesheet">
 </head>
-<body class="mobile-dashboard">
+<body class="mobile-dashboard dashboard-page">
     <header class="dashboard-header">
         <div class="header-brand">
             <span class="brand-mark" aria-hidden="true">SFV</span>
@@ -185,7 +185,10 @@ $formatChange = function ($change) {
                 );
                 foreach ($metrics as $metric):
                 ?>
-                    <article class="metric-card">
+                    <article class="metric-card<?php
+                        echo $metric[4] === 'customers-icon' ? ' metric-card-customers' : '';
+                        echo in_array($metric[4], array('money-icon', 'orders-icon', 'ticket-icon'), true) ? ' metric-card-primary' : '';
+                    ?>">
                         <div class="metric-heading">
                             <h2><?php echo html_escape($metric[0]); ?></h2>
                             <span class="metric-icon <?php echo html_escape($metric[4]); ?>" aria-hidden="true"></span>

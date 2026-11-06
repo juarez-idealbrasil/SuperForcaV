@@ -23,6 +23,8 @@
     var saveButton = document.getElementById('save-order');
     var printOrderButton = document.getElementById('print-order');
     var message = document.getElementById('order-message');
+    var saveConfirmationDialog = document.getElementById('order-confirmation');
+    var saveConfirmationMessage = document.getElementById('order-confirmation-message');
     var deliveryDateValueInput = document.getElementById('delivery-date-value');
     var deliveryDatePicker = document.getElementById('delivery-date-picker');
     var deliveryDateCalendar = document.getElementById('delivery-date-calendar');
@@ -346,6 +348,16 @@
         message.textContent = text;
         message.className = 'order-message is-' + type;
         message.hidden = false;
+    }
+
+    function confirmSaveOrder(text) {
+        saveConfirmationMessage.textContent = text;
+        return new Promise(function (resolve) {
+            saveConfirmationDialog.addEventListener('close', function () {
+                resolve(saveConfirmationDialog.returnValue === 'save');
+            }, {once: true});
+            saveConfirmationDialog.showModal();
+        });
     }
 
     function showOrderPdfLink(text, pdfBlob, orderId) {
@@ -1244,7 +1256,7 @@
         input.addEventListener('input', updateSaveButton);
     });
 
-    form.addEventListener('submit', function (event) {
+    form.addEventListener('submit', async function (event) {
         event.preventDefault();
         updateSaveButton();
         if (saveButton.disabled) {
@@ -1261,7 +1273,7 @@
         var total = items.reduce(function (sum, item) {
             return sum + Math.round(item.price * item.quantity * (100 - item.discount)) / 100;
         }, 0);
-        if (!window.confirm(
+        if (!await confirmSaveOrder(
             'Confirma salvar o pedido de ' + customer.name + ' no valor de '
             + currency(total) + ' para entrega em '
             + new Intl.DateTimeFormat('pt-BR', {timeZone: 'UTC'}).format(

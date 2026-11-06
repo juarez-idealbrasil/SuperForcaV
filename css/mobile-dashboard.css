@@ -1,4 +1,5 @@
 :root {
+    --dashboard-text-scale: 1;
     font-family: "Segoe UI", Arial, sans-serif;
     color: #1f2933;
     background: #f2f4f7;
@@ -13,6 +14,11 @@ body {
     min-width: 320px;
     margin: 0;
     background: #f2f4f7;
+    font-size: calc(16px * var(--dashboard-text-scale));
+}
+
+body.dashboard-page {
+    --dashboard-text-scale: 1.4;
 }
 
 button,
@@ -58,19 +64,19 @@ select {
 .header-copy h1 {
     margin: 0;
     color: #0b3c5d;
-    font-size: 19px;
+    font-size: calc(19px * var(--dashboard-text-scale));
     font-weight: 650;
 }
 
 .header-copy p {
     margin: 4px 0 0;
     color: #64748b;
-    font-size: 12px;
+    font-size: calc(12px * var(--dashboard-text-scale));
 }
 
 .header-user {
     color: #4a6a82;
-    font-size: 13px;
+    font-size: calc(13px * var(--dashboard-text-scale));
 }
 
 .header-user form {
@@ -96,7 +102,7 @@ select {
     border-radius: 8px;
     background: #fff;
     color: #0b3c5d;
-    font-size: 13px;
+    font-size: calc(13px * var(--dashboard-text-scale));
     font-weight: 700;
     cursor: pointer;
     list-style: none;
@@ -252,7 +258,7 @@ select {
     flex: 1 1 auto;
     margin: 0;
     color: #0b3c5d;
-    font-size: 19px;
+    font-size: calc(19px * var(--dashboard-text-scale));
 }
 
 .menu-logout-form {
@@ -270,7 +276,7 @@ select {
     border-radius: 9px;
     background: #eff6ff;
     color: #174a78;
-    font-size: 14px;
+    font-size: calc(14px * var(--dashboard-text-scale));
     font-weight: 700;
     text-decoration: none;
 }
@@ -286,7 +292,7 @@ select {
     border-radius: 9px;
     background: #fff7f7;
     color: #a33b3b;
-    font-size: 14px;
+    font-size: calc(14px * var(--dashboard-text-scale));
     font-weight: 700;
     text-align: left;
     cursor: pointer;
@@ -360,7 +366,7 @@ select {
 }
 
 .filter-close span + span {
-    font-size: 13px;
+    font-size: calc(13px * var(--dashboard-text-scale));
     font-weight: 650;
 }
 
@@ -387,13 +393,13 @@ select {
 .filter-help {
     margin: 0;
     color: #64748b;
-    font-size: 12px;
+    font-size: calc(12px * var(--dashboard-text-scale));
     line-height: 1.45;
 }
 
 .filter label {
     color: #4a6a82;
-    font-size: 11px;
+    font-size: calc(11px * var(--dashboard-text-scale));
     font-weight: 650;
     letter-spacing: 0.05em;
     text-transform: uppercase;
@@ -409,7 +415,7 @@ select {
     border-radius: 8px;
     background: #fff;
     color: #1f2933;
-    font-size: 14px;
+    font-size: calc(14px * var(--dashboard-text-scale));
 }
 
 .filter input:focus,
@@ -449,7 +455,7 @@ select {
     border-radius: 12px;
     background: #fff;
     color: #4a6a82;
-    font-size: 14px;
+    font-size: calc(14px * var(--dashboard-text-scale));
 }
 
 .error-feedback {
@@ -493,8 +499,16 @@ select {
 .metric-heading h2 {
     margin: 0;
     color: #4a6a82;
-    font-size: 13px;
+    font-size: calc(13px * var(--dashboard-text-scale));
     font-weight: 650;
+}
+
+.metric-card-customers .metric-heading h2 {
+    font-size: calc(13px * var(--dashboard-text-scale) * 1.4);
+}
+
+.metric-card-primary .metric-heading h2 {
+    font-size: calc(13px * var(--dashboard-text-scale) * 1.4);
 }
 
 .metric-icon {
@@ -516,23 +530,108 @@ select {
 }
 
 .orders-icon::before {
+    inset: 8px 12px;
+    border: 2px solid #2563eb;
     border-radius: 3px;
 }
 
+.orders-icon::after {
+    position: absolute;
+    top: 13px;
+    left: 16px;
+    width: 10px;
+    height: 14px;
+    background:
+        linear-gradient(#2563eb 0 0) top / 10px 3px no-repeat,
+        radial-gradient(circle, #2563eb 1px, transparent 1.5px) 0 5px / 5px 5px repeat;
+    content: "";
+}
+
+.metric-icon.orders-icon {
+    flex-basis: 42px;
+    width: 42px;
+    height: 42px;
+}
+
 .ticket-icon::before {
-    inset: 6px 9px;
-    border-radius: 4px;
+    inset: auto;
+    top: 21px;
+    left: 10px;
+    width: 22px;
+    height: 13px;
+    border: 0;
+    border-bottom: 2px solid #2563eb;
+    border-left: 2px solid #2563eb;
+    border-radius: 0;
+    background:
+        linear-gradient(135deg, transparent 44%, #2563eb 46% 54%, transparent 56%) 2px 0 / 19px 11px no-repeat,
+        linear-gradient(#2563eb, #2563eb) 4px 5px / 3px 6px no-repeat,
+        linear-gradient(#2563eb, #2563eb) 10px 2px / 3px 9px no-repeat,
+        linear-gradient(#2563eb, #2563eb) 16px 0 / 3px 11px no-repeat;
+}
+
+.metric-icon.ticket-icon {
+    flex-basis: 42px;
+    width: 42px;
+    height: 42px;
+}
+
+.metric-icon.money-icon {
+    flex-basis: 42px;
+    width: 42px;
+    height: 42px;
+}
+
+.money-icon::before {
+    inset: 0;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 0;
+    color: #2563eb;
+    content: "$";
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 1;
 }
 
 .customers-icon::before {
-    border-radius: 50% 50% 4px 4px;
+    inset: 7.5px auto auto 9px;
+    width: 10.5px;
+    height: 10.5px;
+    border: 0;
+    border-radius: 50%;
+    background: #2563eb;
+    box-shadow: 12px 3px 0 -1.5px #2563eb;
+}
+
+.metric-icon.customers-icon {
+    flex-basis: 42px;
+    width: 42px;
+    height: 42px;
+}
+
+.customers-icon::after {
+    position: absolute;
+    top: 22.5px;
+    left: 4.5px;
+    width: 18px;
+    height: 12px;
+    border-radius: 10.5px 10.5px 4.5px 4.5px;
+    background: #2563eb;
+    box-shadow: 15px 1.5px 0 -1.5px #2563eb;
+    content: "";
 }
 
 .metric-value {
     margin: 16px 0 6px;
     overflow-wrap: anywhere;
     color: #0b3c5d;
-    font-size: clamp(21px, 2.5vw, 29px);
+    font-size: clamp(
+        calc(21px * var(--dashboard-text-scale)),
+        calc(2.5vw * var(--dashboard-text-scale)),
+        calc(29px * var(--dashboard-text-scale))
+    );
     font-weight: 750;
     letter-spacing: -0.04em;
 }
@@ -540,7 +639,7 @@ select {
 .metric-change,
 .metric-description {
     margin: 0;
-    font-size: 11px;
+    font-size: calc(11px * var(--dashboard-text-scale));
 }
 
 .metric-change {
@@ -580,7 +679,7 @@ select {
 .section-kicker {
     margin: 0 0 4px;
     color: #2563eb;
-    font-size: 11px;
+    font-size: calc(11px * var(--dashboard-text-scale));
     font-weight: 700;
     letter-spacing: 0.07em;
     text-transform: uppercase;
@@ -589,13 +688,13 @@ select {
 .section-heading h2 {
     margin: 0;
     color: #0b3c5d;
-    font-size: 18px;
+    font-size: calc(18px * var(--dashboard-text-scale));
 }
 
 .section-description {
     margin: 5px 0 0;
     color: #64748b;
-    font-size: 12px;
+    font-size: calc(12px * var(--dashboard-text-scale));
 }
 
 .view-switch {
@@ -613,7 +712,7 @@ select {
     border-radius: 7px;
     background: transparent;
     color: #64748b;
-    font-size: 12px;
+    font-size: calc(12px * var(--dashboard-text-scale));
 }
 
 .view-button.is-active {
@@ -654,14 +753,14 @@ select {
 .chart-label {
     padding-bottom: 7px;
     color: #64748b;
-    font-size: 10px;
+    font-size: calc(10px * var(--dashboard-text-scale));
     white-space: nowrap;
 }
 
 .empty-state,
 .empty-cell {
     color: #64748b;
-    font-size: 13px;
+    font-size: calc(13px * var(--dashboard-text-scale));
 }
 
 .daily-chart .empty-state {
@@ -682,7 +781,7 @@ select {
 .data-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 12px;
+    font-size: calc(12px * var(--dashboard-text-scale));
     text-align: left;
 }
 
@@ -691,7 +790,7 @@ select {
     border-bottom: 2px solid #e5e7eb;
     background: #f7f9fb;
     color: #4a6a82;
-    font-size: 10px;
+    font-size: calc(10px * var(--dashboard-text-scale));
     letter-spacing: 0.05em;
     text-transform: uppercase;
     white-space: nowrap;
@@ -724,7 +823,7 @@ select {
 .ranking-card h3 {
     margin: 0 0 12px;
     color: #0b3c5d;
-    font-size: 13px;
+    font-size: calc(13px * var(--dashboard-text-scale));
 }
 
 .ranking-card ol {
@@ -757,14 +856,14 @@ select {
     border-radius: 50%;
     background: #eaf2f8;
     color: #2563eb;
-    font-size: 10px;
+    font-size: calc(10px * var(--dashboard-text-scale));
     font-weight: 700;
 }
 
 .ranking-name {
     overflow: hidden;
     color: #34495e;
-    font-size: 11px;
+    font-size: calc(11px * var(--dashboard-text-scale));
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -772,7 +871,7 @@ select {
 .ranking-value {
     grid-column: 2;
     color: #2563eb;
-    font-size: 11px;
+    font-size: calc(11px * var(--dashboard-text-scale));
     font-weight: 700;
 }
 
@@ -782,7 +881,7 @@ select {
     border-radius: 99px;
     background: #eaf2f8;
     color: #0b3c5d;
-    font-size: 10px;
+    font-size: calc(10px * var(--dashboard-text-scale));
     font-weight: 700;
     white-space: nowrap;
 }
@@ -795,7 +894,7 @@ select {
 .dashboard-footer {
     padding: 10px 16px calc(16px + env(safe-area-inset-bottom));
     color: #81909d;
-    font-size: 11px;
+    font-size: calc(11px * var(--dashboard-text-scale));
     text-align: center;
 }
 
@@ -818,7 +917,7 @@ select {
     }
 
     .header-copy h1 {
-        font-size: 16px;
+        font-size: calc(16px * var(--dashboard-text-scale));
     }
 
     .header-copy p {
@@ -838,7 +937,7 @@ select {
         min-height: 38px;
         gap: 7px;
         padding: 0 9px;
-        font-size: 12px;
+        font-size: calc(12px * var(--dashboard-text-scale));
     }
 
     .filter-menu .filters {
@@ -847,7 +946,7 @@ select {
     }
 
     .metric-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: 1fr;
         gap: 10px;
     }
 
@@ -856,7 +955,7 @@ select {
     }
 
     .metric-value {
-        font-size: 21px;
+        font-size: calc(21px * var(--dashboard-text-scale));
     }
 
     .panel {
@@ -883,11 +982,19 @@ select {
     }
 
     .metric-heading h2 {
-        font-size: 11px;
+        font-size: calc(11px * var(--dashboard-text-scale));
+    }
+
+    .metric-card-customers .metric-heading h2 {
+        font-size: calc(11px * var(--dashboard-text-scale) * 1.4);
+    }
+
+    .metric-card-primary .metric-heading h2 {
+        font-size: calc(11px * var(--dashboard-text-scale) * 1.4);
     }
 
     .metric-value {
-        font-size: 18px;
+        font-size: calc(18px * var(--dashboard-text-scale));
     }
 
     .section-heading {
