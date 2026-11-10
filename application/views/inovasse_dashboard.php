@@ -12,7 +12,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Painel Inovasse</title>
     <link href="<?php echo html_escape($appBasePath . '/vendors/fontawesome-free/css/all.min.css'); ?>" rel="stylesheet">
-    <link href="<?php echo html_escape($appBasePath . '/css/inovasse-dashboard.css?v=15'); ?>" rel="stylesheet">
+    <link href="<?php echo html_escape($appBasePath . '/css/inovasse-dashboard.css?v=16'); ?>" rel="stylesheet">
 </head>
 <body>
     <?php
@@ -145,82 +145,6 @@
                         <p>Não há dados para os critérios informados.</p>
                     </div>
                 <?php else: ?>
-                    <div class="table-card">
-                        <div class="table-toolbar">
-                            <div>
-                                <strong>Resultado da pesquisa</strong>
-                                <span>Exibindo até 500 registros</span>
-                            </div>
-                            <span class="table-badge"><?php echo html_escape($selectedTitle); ?></span>
-                        </div>
-                        <div class="table-scroll">
-                            <table id="query-results">
-                                <thead>
-                                    <tr>
-                                        <?php foreach ($columns as $column): ?>
-                                            <?php $normalizedColumn = strtoupper(preg_replace('/[^A-Z0-9]/', '', $column)); ?>
-                                            <?php $isRightAligned = $normalizedColumn === 'QUANTIDADE' || ($selected_view === 'estoque' && $normalizedColumn === 'NUMESTOQUE'); ?>
-                                            <th scope="col" class="<?php echo $isRightAligned ? 'quantity-value' : ''; ?>"><?php echo html_escape($column); ?></th>
-                                        <?php endforeach; ?>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($rows as $row): ?>
-                                        <tr>
-                                            <?php foreach ($columns as $column): ?>
-                                                <?php
-                                                    $value = array_key_exists($column, $row) ? $row[$column] : NULL;
-                                                    $normalizedColumn = strtoupper(preg_replace('/[^A-Z0-9]/', '', $column));
-                                                    $isCurrency = in_array($normalizedColumn, array('VALORUNITARIO', 'VALORTOTAL', 'VALORDESCONTO'), TRUE);
-                                                    $isQuantity = $normalizedColumn === 'QUANTIDADE';
-                                                    $isStockNumber = $selected_view === 'estoque' && $normalizedColumn === 'NUMESTOQUE';
-                                                    $isRightAligned = $isQuantity || $isStockNumber;
-                                                ?>
-                                                <td class="<?php echo $isRightAligned ? 'quantity-value' : ''; ?>"><?php
-                                                    if ($value === NULL) {
-                                                        echo '<span class="null-value">—</span>';
-                                                    } elseif ($isCurrency && is_numeric($value)) {
-                                                        echo 'R$ ' . number_format((float) $value, 2, ',', '.');
-                                                    } elseif ($isRightAligned && is_numeric($value)) {
-                                                        $formattedQuantity = number_format((float) $value, 3, ',', '.');
-                                                        echo rtrim(rtrim($formattedQuantity, '0'), ',');
-                                                    } else {
-                                                        echo html_escape((string) $value);
-                                                    }
-                                                ?></td>
-                                            <?php endforeach; ?>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                                <?php if ($selected_view === 'faturamento' && count($availableTotalColumns) > 0): ?>
-                                    <tfoot>
-                                        <tr>
-                                            <?php foreach ($columns as $column): ?>
-                                                <?php if (isset($availableTotalColumns[$column])): ?>
-                                                    <?php
-                                                        $totalKey = $availableTotalColumns[$column];
-                                                        $isQuantity = $totalKey === 'QUANTIDADE';
-                                                        $decimals = $isQuantity ? 3 : 2;
-                                                    ?>
-                                                    <td class="total-value<?php echo $isQuantity ? ' quantity-value' : ''; ?>"><?php
-                                                        if ($totalKey === 'VALORTOTAL' || $totalKey === 'VALORDESCONTO') {
-                                                            echo 'R$ ';
-                                                        }
-                                                        $formattedTotal = number_format(isset($totals[$totalKey]) ? $totals[$totalKey] : 0, $decimals, ',', '.');
-                                                        echo $isQuantity ? rtrim(rtrim($formattedTotal, '0'), ',') : $formattedTotal;
-                                                    ?></td>
-                                                <?php elseif ($column === $firstColumn): ?>
-                                                    <td class="total-label">Total exibido</td>
-                                                <?php else: ?>
-                                                    <td></td>
-                                                <?php endif; ?>
-                                            <?php endforeach; ?>
-                                        </tr>
-                                    </tfoot>
-                                <?php endif; ?>
-                            </table>
-                        </div>
-                    </div>
                     <?php if ($selected_view === 'faturamento' && $operationColumn !== NULL && $amountColumn !== NULL): ?>
                         <section class="operation-summary" aria-label="Totais por tipo de operação">
                             <div class="operation-summary-heading">
@@ -269,8 +193,94 @@
                             </div>
                         </section>
                     <?php endif; ?>
+                    <div class="table-card">
+                        <div class="table-toolbar">
+                            <div>
+                                <strong>Resultado da pesquisa</strong>
+                                <span>Exibindo até 500 registros</span>
+                            </div>
+                            <span class="table-badge"><?php echo html_escape($selectedTitle); ?></span>
+                        </div>
+                        <div class="table-scroll">
+                            <table id="query-results">
+                                <thead>
+                                    <tr>
+                                        <?php foreach ($columns as $column): ?>
+                                            <?php $normalizedColumn = strtoupper(preg_replace('/[^A-Z0-9]/', '', $column)); ?>
+                                            <?php $isRightAligned = $normalizedColumn === 'QUANTIDADE' || ($selected_view === 'estoque' && $normalizedColumn === 'NUMESTOQUE'); ?>
+                                            <th scope="col" class="<?php echo $isRightAligned ? 'quantity-value' : ''; ?>"><?php echo html_escape($column); ?></th>
+                                        <?php endforeach; ?>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($rows as $row): ?>
+                                        <tr>
+                                            <?php foreach ($columns as $column): ?>
+                                                <?php
+                                                    $value = array_key_exists($column, $row) ? $row[$column] : NULL;
+                                                    $normalizedColumn = strtoupper(preg_replace('/[^A-Z0-9]/', '', $column));
+                                                    $isCurrency = in_array($normalizedColumn, array('VALORUNITARIO', 'VALORTOTAL', 'VALORDESCONTO'), TRUE);
+                                                    $isQuantity = $normalizedColumn === 'QUANTIDADE';
+                                                    $isStockNumber = $selected_view === 'estoque' && $normalizedColumn === 'NUMESTOQUE';
+                                                    $isRightAligned = $isQuantity || $isStockNumber;
+                                                ?>
+                                                <td class="<?php echo $isRightAligned ? 'quantity-value' : ''; ?>"><?php
+                                                    if ($value === NULL) {
+                                                        echo '<span class="null-value">—</span>';
+                                                    } elseif ($isCurrency && is_numeric($value)) {
+                                                        echo 'R$ ' . number_format((float) $value, 2, ',', '.');
+                                                    } elseif ($isRightAligned && is_numeric($value)) {
+                                                        $formattedQuantity = number_format((float) $value, 3, ',', '.');
+                                                        echo rtrim(rtrim($formattedQuantity, '0'), ',');
+                                                    } elseif ($normalizedColumn === 'DATA'
+                                                        && is_string($value)
+                                                        && preg_match('/^(\d{4})-(\d{2})-(\d{2})(?:\s|T|$)/', $value, $dateParts)
+                                                        && checkdate((int) $dateParts[2], (int) $dateParts[3], (int) $dateParts[1])) {
+                                                        echo $dateParts[3] . '-' . $dateParts[2] . '-' . $dateParts[1];
+                                                    } else {
+                                                        echo html_escape((string) $value);
+                                                    }
+                                                ?></td>
+                                            <?php endforeach; ?>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                                <?php if ($selected_view === 'faturamento' && count($availableTotalColumns) > 0): ?>
+                                    <tfoot>
+                                        <tr>
+                                            <?php foreach ($columns as $column): ?>
+                                                <?php if (isset($availableTotalColumns[$column])): ?>
+                                                    <?php
+                                                        $totalKey = $availableTotalColumns[$column];
+                                                        $isQuantity = $totalKey === 'QUANTIDADE';
+                                                        $decimals = $isQuantity ? 3 : 2;
+                                                    ?>
+                                                    <td class="total-value<?php echo $isQuantity ? ' quantity-value' : ''; ?>"><?php
+                                                        if ($totalKey === 'VALORTOTAL' || $totalKey === 'VALORDESCONTO') {
+                                                            echo 'R$ ';
+                                                        }
+                                                        $formattedTotal = number_format(isset($totals[$totalKey]) ? $totals[$totalKey] : 0, $decimals, ',', '.');
+                                                        echo $isQuantity ? rtrim(rtrim($formattedTotal, '0'), ',') : $formattedTotal;
+                                                    ?></td>
+                                                <?php elseif ($column === $firstColumn): ?>
+                                                    <td class="total-label">Total exibido</td>
+                                                <?php else: ?>
+                                                    <td></td>
+                                                <?php endif; ?>
+                                            <?php endforeach; ?>
+                                        </tr>
+                                    </tfoot>
+                                <?php endif; ?>
+                            </table>
+                        </div>
+                    </div>
                 <?php endif; ?>
             </section>
+            <footer class="dashboard-footer">
+                <span>&copy; <?php echo date('Y'); ?>. Desenvolvido por
+                    <a href="https://www.idealbrasil.net" target="_blank" rel="noopener noreferrer">Ideal Brasil Sistemas</a>
+                </span>
+            </footer>
         </main>
     </div>
     <script src="<?php echo html_escape($appBasePath . '/js/inovasse-dashboard.js?v=8'); ?>"></script>

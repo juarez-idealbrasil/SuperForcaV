@@ -172,7 +172,13 @@ class MobileOrder_model extends CI_Model
                     P.ID_PRO,
                     P.DESCRICAO,
                     P.BAR_CODE,
-                    FP.PRECO
+                    FP.PRECO,
+                    COALESCE(
+                        (SELECT SUM(ES.SALDO_DISP)
+                           FROM ESTOQUE_SALDO ES
+                          WHERE ES.ID_PRO = P.ID_PRO),
+                        0
+                    ) AS SALDO_DISP
                FROM PERFIL_PRODUTO_REPRES PR
                JOIN PRODUTO P ON P.ID_PRO = PR.ID_PRO
                JOIN FORMACAO_PRECO FP

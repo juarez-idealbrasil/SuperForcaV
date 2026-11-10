@@ -4,4 +4,5 @@
 	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto&display=swap">
 	<link rel="stylesheet" href="/forcavws/vendors/bootstrap/css/bootstrap.min.css">
 	<link rel="stylesheet" href="/forcavws/css/custom.css?v=1.3">
+	<link rel="stylesheet" href="/forcavws/css/idealbrasil-footer.css?v=1">
 </head>

@@ -6,7 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#145c46">
     <title>ForçaV - Acesso</title>
-    <link href="<?php echo html_escape($appBasePath . '/css/mobile.css?v=6'); ?>" rel="stylesheet">
+    <link href="<?php echo html_escape($appBasePath . '/css/mobile.css?v=7'); ?>" rel="stylesheet">
+    <link href="<?php echo html_escape($appBasePath . '/css/idealbrasil-footer.css?v=1'); ?>" rel="stylesheet">
 </head>
 <body class="mobile-page">
     <main class="auth-shell">
@@ -25,7 +26,7 @@
             <form method="post" action="<?php echo html_escape($appBasePath . '/index.php/mobile/auth'); ?>" autocomplete="on">
                 <label for="username">Usuário</label>
                 <input id="username" name="username" type="text" maxlength="30"
-                       autocomplete="username" autocapitalize="none" required>
+                       autocomplete="username" autocapitalize="characters" required>
 
                 <label for="password">Senha</label>
                 <input id="password" name="password" type="password" maxlength="15"
@@ -34,7 +35,20 @@
                 <button class="primary-button" type="submit">Entrar</button>
             </form>
         </section>
-        <p class="page-note">Acesso ao ambiente de vendas</p>
+        <?php $this->load->view('partials/idealbrasil_footer', array('footer_class' => 'page-note')); ?>
     </main>
+    <script>
+        (function () {
+            var username = document.getElementById('username');
+            var form = username.form;
+
+            username.addEventListener('input', function () {
+                username.value = username.value.toUpperCase();
+            });
+            form.addEventListener('submit', function () {
+                username.value = username.value.toUpperCase();
+            });
+        }());
+    </script>
 </body>
 </html>

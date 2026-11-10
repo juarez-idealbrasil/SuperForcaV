@@ -52,6 +52,8 @@ class MobileDashboard_model extends CI_Model
         $companyId,
         $startDate,
         $endDate,
+        $previousStartDate,
+        $previousEndDate,
         $representativeId = 0,
         $teamId = 0,
         $customerId = 0
@@ -78,6 +80,20 @@ class MobileDashboard_model extends CI_Model
                     $commonParams
                 ),
                 'daily sales'
+            ),
+            'daily_sales_previous' => $this->getRows(
+                $this->db->query(
+                    'SELECT * FROM SP_VENDAS_DIARIAS(?, ?, ?, ?, ?, ?)',
+                    array(
+                        $companyId,
+                        $previousStartDate,
+                        $previousEndDate,
+                        $representativeId,
+                        $teamId,
+                        $customerId
+                    )
+                ),
+                'previous-year daily sales'
             ),
             'rankings' => array(
                 'products' => $this->getRows(

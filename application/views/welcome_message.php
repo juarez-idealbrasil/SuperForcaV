@@ -5,6 +5,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 <head>
 	<meta charset="utf-8">
 	<title>Welcome to CodeIgniter</title>
+	<link rel="stylesheet" href="/forcavws/css/idealbrasil-footer.css?v=1">
 
 	<style type="text/css">
 
@@ -85,5 +86,6 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 	<p class="footer">Page rendered in <strong>{elapsed_time}</strong> seconds. <?php echo  (ENVIRONMENT === 'development') ?  'CodeIgniter Version <strong>' . CI_VERSION . '</strong>' : '' ?></p>
 </div>
 
+<?php $this->load->view('partials/idealbrasil_footer'); ?>
 </body>
 </html>

@@ -67,6 +67,9 @@
     var savedOrderId = null;
     var isPreparingOrderPdf = false;
     var orderPdfUrl = null;
+    var orderPdfViewer = null;
+    var orderPdfFrame = null;
+    var orderPdfViewerTrigger = null;
     var selectedDeliveryDate = new Date(deliveryDateInput.value.split('/').reverse().join('-') + 'T00:00:00');
     var calendarMonth = new Date(selectedDeliveryDate.getFullYear(), selectedDeliveryDate.getMonth(), 1);
 
@@ -372,13 +375,82 @@
 
         var link = document.createElement('a');
         link.href = orderPdfUrl;
-        link.target = '_blank';
-        link.rel = 'noopener';
         link.type = 'application/pdf';
-        link.textContent = 'Abrir PDF';
-        link.setAttribute('aria-label', 'Abrir o PDF do pedido ' + orderId + ' no navegador');
+        link.textContent = 'Visualizar PDF';
+        link.setAttribute('aria-label', 'Visualizar o PDF do pedido ' + orderId + ' nesta tela');
+        link.addEventListener('click', function (event) {
+            event.preventDefault();
+            openOrderPdfViewer(link);
+        });
         message.appendChild(link);
         message.hidden = false;
+    }
+
+    function openOrderPdfViewer(trigger) {
+        if (!orderPdfUrl) {
+            return;
+        }
+
+        if (!orderPdfViewer) {
+            orderPdfViewer = document.createElement('section');
+            orderPdfViewer.className = 'order-pdf-viewer';
+            orderPdfViewer.setAttribute('role', 'dialog');
+            orderPdfViewer.setAttribute('aria-modal', 'true');
+            orderPdfViewer.setAttribute('aria-label', 'Visualização do pedido em PDF');
+            orderPdfViewer.hidden = true;
+
+            var toolbar = document.createElement('div');
+            toolbar.className = 'order-pdf-viewer-toolbar';
+
+            var title = document.createElement('strong');
+            title.textContent = 'Pedido em PDF';
+
+            var closeButton = document.createElement('button');
+            closeButton.type = 'button';
+            closeButton.className = 'order-pdf-viewer-close';
+            closeButton.textContent = 'Fechar';
+            closeButton.addEventListener('click', closeOrderPdfViewer);
+
+            orderPdfFrame = document.createElement('iframe');
+            orderPdfFrame.className = 'order-pdf-viewer-frame';
+            orderPdfFrame.title = 'Documento PDF do pedido';
+
+            toolbar.appendChild(title);
+            toolbar.appendChild(closeButton);
+            orderPdfViewer.appendChild(toolbar);
+            orderPdfViewer.appendChild(orderPdfFrame);
+            orderPdfViewer.addEventListener('click', function (event) {
+                if (event.target === orderPdfViewer) {
+                    closeOrderPdfViewer();
+                }
+            });
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape' && !orderPdfViewer.hidden) {
+                    closeOrderPdfViewer();
+                }
+            });
+            document.body.appendChild(orderPdfViewer);
+        }
+
+        orderPdfViewerTrigger = trigger;
+        orderPdfFrame.src = orderPdfUrl;
+        orderPdfViewer.hidden = false;
+        document.body.classList.add('order-pdf-viewer-open');
+        orderPdfViewer.querySelector('.order-pdf-viewer-close').focus();
+    }
+
+    function closeOrderPdfViewer() {
+        if (!orderPdfViewer || orderPdfViewer.hidden) {
+            return;
+        }
+
+        orderPdfViewer.hidden = true;
+        orderPdfFrame.removeAttribute('src');
+        document.body.classList.remove('order-pdf-viewer-open');
+        if (orderPdfViewerTrigger) {
+            orderPdfViewerTrigger.focus();
+            orderPdfViewerTrigger = null;
+        }
     }
 
     function hideMessage() {
@@ -512,7 +584,7 @@
         productImagePreview.querySelector('.product-image-preview-close').focus();
     }
 
-    function makeSearchResult(label, detail, onClick, buttonLabel, imageData, buttonAriaLabel) {
+    function makeSearchResult(label, detail, onClick, buttonLabel, imageData, buttonAriaLabel, stock) {
         var row = document.createElement('div');
         row.className = 'order-search-result';
 
@@ -587,6 +659,12 @@
             var description = document.createElement('small');
             description.textContent = detail;
             copy.appendChild(description);
+        }
+        if (stock) {
+            var stockLabel = document.createElement('small');
+            stockLabel.className = 'order-result-stock';
+            stockLabel.textContent = stock;
+            copy.appendChild(stockLabel);
         }
 
         var button = document.createElement('button');
@@ -763,7 +841,8 @@
                         url: product.image_url,
                         fallbackUrl: product.fallback_image_url
                     },
-                    'Adicionar produto: ' + product.description
+                    'Adicionar produto: ' + product.description,
+                    'Estoque: ' + formatQuantity(Number(product.stock), true)
                 ));
             });
         }
@@ -817,13 +896,17 @@
             if (existing.quantity + 1 <= 100000) {
                 existing.quantity += 1;
             }
+            existing.imageUrl = product.image_url || existing.imageUrl || '';
+            existing.fallbackImageUrl = product.fallback_image_url || existing.fallbackImageUrl || '';
         } else {
             items.push({
                 id: product.id,
                 description: product.description,
                 price: Number(product.price),
                 quantity: 1,
-                discount: 0
+                discount: 0,
+                imageUrl: product.image_url || '',
+                fallbackImageUrl: product.fallback_image_url || ''
             });
         }
         hideMessage();
@@ -847,10 +930,28 @@
                 var article = document.createElement('article');
                 article.className = 'mock-product';
 
-                var symbol = document.createElement('span');
-                symbol.className = 'product-symbol';
-                symbol.setAttribute('aria-hidden', 'true');
-                symbol.textContent = 'P';
+                var fallbackSymbol = document.createElement('span');
+                fallbackSymbol.className = 'product-symbol';
+                fallbackSymbol.setAttribute('aria-hidden', 'true');
+                fallbackSymbol.textContent = 'P';
+                var symbol = fallbackSymbol;
+                if (item.imageUrl) {
+                    var thumbnail = document.createElement('img');
+                    thumbnail.className = 'product-symbol product-thumbnail';
+                    thumbnail.src = item.imageUrl;
+                    thumbnail.alt = item.description;
+                    thumbnail.loading = 'lazy';
+                    var fallbackImageUrl = item.fallbackImageUrl;
+                    thumbnail.addEventListener('error', function () {
+                        if (fallbackImageUrl) {
+                            thumbnail.src = fallbackImageUrl;
+                            fallbackImageUrl = '';
+                        } else {
+                            thumbnail.replaceWith(fallbackSymbol);
+                        }
+                    });
+                    symbol = thumbnail;
+                }
 
                 var details = document.createElement('div');
                 details.className = 'product-details';

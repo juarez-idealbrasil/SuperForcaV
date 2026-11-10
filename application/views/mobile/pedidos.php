@@ -10,8 +10,9 @@ $appBasePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#0b3c5d">
     <title>ForçaV - Novo pedido</title>
+    <link href="<?php echo html_escape($appBasePath . '/css/idealbrasil-footer.css?v=1'); ?>" rel="stylesheet">
     <link href="<?php echo html_escape($appBasePath . '/css/mobile-dashboard.css?v=orders-live-1'); ?>" rel="stylesheet">
-    <link href="<?php echo html_escape($appBasePath . '/css/mobile-orders-mockup.css?v=23'); ?>" rel="stylesheet">
+    <link href="<?php echo html_escape($appBasePath . '/css/mobile-orders-mockup.css?v=26'); ?>" rel="stylesheet">
 </head>
 <body class="mobile-dashboard orders-mockup orders-live">
     <header class="dashboard-header">
@@ -38,7 +39,7 @@ $appBasePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
             <div>
                 <p class="orders-kicker">PEDIDO DE VENDA</p>
             </div>
-            <span class="live-badge">FORÇA V</span>
+            <span class="live-badge">Super FORÇA V</span>
         </div>
 
         <div id="order-message" class="order-message" role="status" aria-live="polite" hidden></div>
@@ -270,7 +271,7 @@ $appBasePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
         </div>
     </dialog>
 
-    <footer class="dashboard-footer">ForçaV · O pedido será gravado como pendente</footer>
-    <script src="<?php echo html_escape($appBasePath . '/js/mobile-orders.js?v=19'); ?>" defer></script>
+    <?php $this->load->view('partials/idealbrasil_footer', array('footer_class' => 'dashboard-footer')); ?>
+    <script src="<?php echo html_escape($appBasePath . '/js/mobile-orders.js?v=20'); ?>" defer></script>
 </body>
 </html>

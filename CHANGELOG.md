@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.6 - 2026-11-10
+
+- Added a mobile dashboard comparison with sales from the same period in the previous year.
+- Improved mobile dashboard and order screens, including product availability data and refreshed branding/footer presentation.
+
 ## 1.0.5 - 2026-11-10
 
 - Added the Inovasse dashboard with billing, customer, inventory, and product queries, date filtering, operation summaries, and CSV export.

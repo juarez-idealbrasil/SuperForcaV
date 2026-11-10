@@ -6,6 +6,7 @@ include_once APPPATH . 'helpers/function_helper.php';
 $appBasePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 $indicators = $dashboard !== NULL ? $dashboard['indicators'] : array();
 $dailySales = $dashboard !== NULL ? $dashboard['daily_sales'] : array();
+$dailySalesPrevious = $dashboard !== NULL ? $dashboard['daily_sales_previous'] : array();
 $rankings = $dashboard !== NULL ? $dashboard['rankings'] : array();
 $customers = $dashboard !== NULL ? $dashboard['customers'] : array();
 $revenue = isset($indicators['FATURAMENTO_TOTAL']) ? (float) $indicators['FATURAMENTO_TOTAL'] : 0;
@@ -20,9 +21,41 @@ $revenueChange = $revenuePrevious != 0 ? (($revenue - $revenuePrevious) / abs($r
 $salesChange = $salesPrevious != 0 ? (($salesCount - $salesPrevious) / abs($salesPrevious)) * 100 : 0;
 $ticketChange = $ticketPrevious != 0 ? (($averageTicket - $ticketPrevious) / abs($ticketPrevious)) * 100 : 0;
 $customersChange = $customersPrevious != 0 ? (($activeCustomers - $customersPrevious) / abs($customersPrevious)) * 100 : 0;
+$dailySalesByDate = array();
+$dailySalesPreviousByDate = array();
 $maxDailyRevenue = 0;
 foreach ($dailySales as $dailySale) {
-    $maxDailyRevenue = max($maxDailyRevenue, (float) $dailySale['VALOR_TOTAL']);
+    $dateKey = date('Y-m-d', strtotime($dailySale['DATA_VENDA']));
+    $dailySalesByDate[$dateKey] = (float) $dailySale['VALOR_TOTAL'];
+    $maxDailyRevenue = max($maxDailyRevenue, $dailySalesByDate[$dateKey]);
+}
+foreach ($dailySalesPrevious as $dailySale) {
+    $dateKey = date('Y-m-d', strtotime($dailySale['DATA_VENDA']));
+    $dailySalesPreviousByDate[$dateKey] = (float) $dailySale['VALOR_TOTAL'];
+    $maxDailyRevenue = max($maxDailyRevenue, $dailySalesPreviousByDate[$dateKey]);
+}
+$dailySalesComparison = array();
+if ($dashboard !== NULL) {
+    $chartDate = new DateTime($start_date);
+    $chartEndDate = new DateTime($end_date);
+    while ($chartDate <= $chartEndDate) {
+        $previousYear = (int) $chartDate->format('Y') - 1;
+        $previousMonth = (int) $chartDate->format('m');
+        $previousDay = (int) $chartDate->format('d');
+
+        $currentDateKey = $chartDate->format('Y-m-d');
+        $previousDateKey = checkdate($previousMonth, $previousDay, $previousYear)
+            ? sprintf('%04d-%02d-%02d', $previousYear, $previousMonth, $previousDay)
+            : '';
+        $dailySalesComparison[] = array(
+            'date' => $currentDateKey,
+            'current' => isset($dailySalesByDate[$currentDateKey]) ? $dailySalesByDate[$currentDateKey] : 0,
+            'previous' => $previousDateKey !== '' && isset($dailySalesPreviousByDate[$previousDateKey])
+                ? $dailySalesPreviousByDate[$previousDateKey]
+                : 0
+        );
+        $chartDate->modify('+1 day');
+    }
 }
 $customerRevenue = 0;
 foreach ($customers as $customer) {
@@ -43,15 +76,17 @@ $formatChange = function ($change) {
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#0b3c5d">
     <title>ForçaV - Visão Geral</title>
-    <link href="<?php echo html_escape($appBasePath . '/css/mobile-dashboard.css?v=filters-menu-20'); ?>" rel="stylesheet">
+    <link href="<?php echo html_escape($appBasePath . '/css/mobile-dashboard.css?v=filters-menu-22'); ?>" rel="stylesheet">
+    <link href="<?php echo html_escape($appBasePath . '/css/idealbrasil-footer.css?v=1'); ?>" rel="stylesheet">
 </head>
 <body class="mobile-dashboard dashboard-page">
     <header class="dashboard-header">
         <div class="header-brand">
-            <span class="brand-mark" aria-hidden="true">SFV</span>
+            <img class="brand-mark" src="<?php echo html_escape($appBasePath . '/IMG/Logo1.png'); ?>"
+                alt="Ideal Brasil Distribuidora">
             <div class="header-copy">
-                <h1>Visão Geral do Negócio</h1>
-                <p>Acompanhe os principais indicadores · Atualizado <?php echo date('d/m/Y H:i'); ?></p>
+                <h1>Visão Geral</h1>
+                <p>Principais indicadores · Atualizado <?php echo date('d/m/Y H:i'); ?></p>
             </div>
         </div>
         <div class="header-user">
@@ -178,8 +213,8 @@ $formatChange = function ($change) {
             <section class="metric-grid" aria-label="Indicadores do período">
                 <?php
                 $metrics = array(
-                    array('Total de Vendas', Functions::MoneyFormat($revenue), $formatChange($revenueChange), 'Faturamento total do período', 'money-icon'),
-                    array('Quantidade de Vendas', Functions::IntegerFormat($salesCount), $formatChange($salesChange), 'Pedidos realizados no período', 'orders-icon'),
+                    array('Total Vendas', Functions::MoneyFormat($revenue), $formatChange($revenueChange), 'Faturamento total do período', 'money-icon'),
+                    array('Qtd. Vendas', Functions::IntegerFormat($salesCount), $formatChange($salesChange), 'Pedidos realizados no período', 'orders-icon'),
                     array('Ticket Médio', Functions::MoneyFormat($averageTicket), $formatChange($ticketChange), 'Valor médio por venda', 'ticket-icon'),
                     array('Clientes Ativos', Functions::IntegerFormat($activeCustomers), $formatChange($customersChange), 'Clientes que compraram no período', 'customers-icon')
                 );
@@ -207,7 +242,7 @@ $formatChange = function ($change) {
                     <div>
                         <p class="section-kicker">Desempenho</p>
                         <h2>Vendas por dia</h2>
-                        <p class="section-description">Comportamento diário do período selecionado</p>
+                        <p class="section-description">Período selecionado comparado ao mesmo período do ano anterior</p>
                     </div>
                     <div class="view-switch" role="group" aria-label="Visualização das vendas diárias">
                         <button type="button" class="view-button is-active" data-view="chart">Gráfico</button>
@@ -215,20 +250,39 @@ $formatChange = function ($change) {
                     </div>
                 </div>
                 <div id="dailyChart" class="daily-chart">
-                    <?php if (count($dailySales) === 0): ?>
+                    <?php if (count($dailySales) === 0 && count($dailySalesPrevious) === 0): ?>
                         <p class="empty-state">Sem vendas no período selecionado.</p>
                     <?php else: ?>
-                        <?php foreach ($dailySales as $dailySale):
-                            $amount = (float) $dailySale['VALOR_TOTAL'];
-                            $barHeight = $maxDailyRevenue > 0 ? max(4, ($amount / $maxDailyRevenue) * 100) : 0;
+                        <?php foreach ($dailySalesComparison as $dailySale):
+                            $currentAmount = $dailySale['current'];
+                            $previousAmount = $dailySale['previous'];
+                            $currentBarHeight = $maxDailyRevenue > 0 ? ($currentAmount / $maxDailyRevenue) * 100 : 0;
+                            $previousBarHeight = $maxDailyRevenue > 0 ? ($previousAmount / $maxDailyRevenue) * 100 : 0;
+                            $chartDateLabel = date('d/m', strtotime($dailySale['date']));
                         ?>
-                            <div class="chart-column" title="<?php echo html_escape(Functions::DateFormat($dailySale['DATA_VENDA']) . ' · ' . Functions::MoneyFormat($amount)); ?>">
-                                <span class="chart-bar" style="height: <?php echo $barHeight; ?>%"></span>
-                                <span class="chart-label"><?php echo html_escape(date('d/m', strtotime($dailySale['DATA_VENDA']))); ?></span>
+                            <div class="chart-column" title="<?php
+                                echo html_escape(
+                                    $chartDateLabel . ' · ' . date('Y', strtotime($dailySale['date'])) . ': '
+                                    . Functions::MoneyFormat($currentAmount) . ' · '
+                                    . ((int) date('Y', strtotime($dailySale['date'])) - 1) . ': '
+                                    . Functions::MoneyFormat($previousAmount)
+                                );
+                            ?>">
+                                <span class="chart-bar-group">
+                                    <span class="chart-bar chart-bar-current" style="height: <?php echo $currentBarHeight; ?>%"></span>
+                                    <span class="chart-bar chart-bar-previous" style="height: <?php echo $previousBarHeight; ?>%"></span>
+                                </span>
+                                <span class="chart-label"><?php echo html_escape($chartDateLabel); ?></span>
                             </div>
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </div>
+                <?php if (count($dailySales) > 0 || count($dailySalesPrevious) > 0): ?>
+                    <div class="chart-legend" aria-label="Legenda do gráfico">
+                        <span><i class="chart-legend-current" aria-hidden="true"></i>Período selecionado</span>
+                        <span><i class="chart-legend-previous" aria-hidden="true"></i>Mesmo período do ano anterior</span>
+                    </div>
+                <?php endif; ?>
                 <div id="dailyTable" class="table-scroll is-hidden">
                     <table class="data-table">
                         <thead>
@@ -354,7 +408,7 @@ $formatChange = function ($change) {
         <?php endif; ?>
     </main>
 
-    <footer class="dashboard-footer">ForçaV · <?php echo date('Y'); ?></footer>
+    <?php $this->load->view('partials/idealbrasil_footer', array('footer_class' => 'dashboard-footer')); ?>
     <script src="<?php echo html_escape($appBasePath . '/js/mobile-dashboard.js?v=filters-menu-7'); ?>"></script>
 </body>
 </html>

@@ -61,6 +61,13 @@ select {
     font-weight: 800;
 }
 
+.dashboard-page .brand-mark {
+    display: block;
+    border-radius: 8px;
+    background: transparent;
+    object-fit: contain;
+}
+
 .header-copy h1 {
     margin: 0;
     color: #0b3c5d;
@@ -734,7 +741,7 @@ select {
 
 .chart-column {
     display: flex;
-    flex: 1 0 18px;
+    flex: 0 0 42px;
     flex-direction: column;
     align-items: center;
     justify-content: end;
@@ -742,12 +749,26 @@ select {
     height: 205px;
 }
 
+.chart-bar-group {
+    display: flex;
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 0;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 3px;
+}
+
 .chart-bar {
     display: block;
-    width: min(100%, 28px);
-    min-height: 3px;
+    width: 15px;
+    min-height: 0;
     border-radius: 5px 5px 0 0;
     background: linear-gradient(180deg, #4d91ed, #2563eb);
+}
+
+.chart-bar-previous {
+    background: linear-gradient(180deg, #aab6c5, #718096);
 }
 
 .chart-label {
@@ -755,6 +776,36 @@ select {
     color: #64748b;
     font-size: calc(10px * var(--dashboard-text-scale));
     white-space: nowrap;
+}
+
+.chart-legend {
+    display: flex;
+    justify-content: center;
+    gap: 18px;
+    padding: 12px 0 2px;
+    color: #64748b;
+    font-size: calc(11px * var(--dashboard-text-scale));
+}
+
+.chart-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.chart-legend i {
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    border-radius: 3px;
+}
+
+.chart-legend-current {
+    background: #3478e5;
+}
+
+.chart-legend-previous {
+    background: #8795a8;
 }
 
 .empty-state,
@@ -911,6 +962,12 @@ select {
     }
 
     .brand-mark {
+        flex-basis: 38px;
+        width: 38px;
+        height: 38px;
+    }
+
+    .dashboard-page .brand-mark {
         flex-basis: 38px;
         width: 38px;
         height: 38px;

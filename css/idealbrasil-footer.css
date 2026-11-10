@@ -1,0 +1,20 @@
+.idealbrasil-footer {
+    color: #81909d;
+    font-size: 11px;
+    text-align: center;
+}
+
+.idealbrasil-footer:not(.dashboard-footer):not(.sticky-footer) {
+    margin-top: 20px;
+    padding: 12px 16px;
+}
+
+.idealbrasil-footer a {
+    color: #536f87;
+    text-decoration: none;
+}
+
+.idealbrasil-footer a:hover {
+    color: #0b3c5d;
+    text-decoration: underline;
+}

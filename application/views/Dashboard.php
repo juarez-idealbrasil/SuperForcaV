@@ -35,6 +35,7 @@
 
   <!-- Custom styles for this template-->
   <link href="/forcavws/css/sb-admin-2.min.css" rel="stylesheet">
+  <link href="/forcavws/css/idealbrasil-footer.css?v=1" rel="stylesheet">
 
 </head>
 
@@ -196,13 +197,7 @@
       <!-- End of Main Content -->
 
       <!-- Footer -->
-      <footer class="sticky-footer bg-white">
-        <div class="container my-auto">
-          <div class="copyright text-center my-auto">
-            <span>Copyright &copy; Ideal Brasil <?php echo date("Y"); ?></span>
-          </div>
-        </div>
-      </footer>
+      <?php $this->load->view('partials/idealbrasil_footer', array('footer_class' => 'sticky-footer bg-white')); ?>
       <!-- End of Footer -->
 
     </div>

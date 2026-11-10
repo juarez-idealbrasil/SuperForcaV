@@ -59,5 +59,6 @@
 
 		</div>
 
+	<?php $this->load->view('partials/idealbrasil_footer'); ?>
 	</body>
 </html>  

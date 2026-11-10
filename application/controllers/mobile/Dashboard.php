@@ -100,6 +100,8 @@ class Dashboard extends CI_Controller
                     $companyId,
                     $startDate,
                     $endDate,
+                    $this->getPreviousYearDate($startDate),
+                    $this->getPreviousYearDate($endDate),
                     $representativeId,
                     $teamId,
                     $customerId
@@ -237,7 +239,8 @@ class Dashboard extends CI_Controller
                     'fallback_image_url' => $barcode !== ''
                         ? $this->buildProductImageUrl($imageRepository, (string) $product['ID_PRO'])
                         : '',
-                    'price' => (float) $product['PRECO']
+                    'price' => (float) $product['PRECO'],
+                    'stock' => (float) $product['SALDO_DISP']
                 );
             }, $products);
             $this->respondJson(array('items' => $items), 200);
@@ -540,6 +543,21 @@ class Dashboard extends CI_Controller
         }
 
         $date = DateTime::createFromFormat('!Y-m-d', $value);
-        return $date !== FALSE && $date->format('Y-m-d') === $value;
+        return (int) substr($value, 0, 4) > 1
+            && $date !== FALSE
+            && $date->format('Y-m-d') === $value;
+    }
+
+    private function getPreviousYearDate($value)
+    {
+        $year = (int) substr($value, 0, 4) - 1;
+        $month = (int) substr($value, 5, 2);
+        $day = (int) substr($value, 8, 2);
+
+        while (!checkdate($month, $day, $year)) {
+            $day--;
+        }
+
+        return sprintf('%04d-%02d-%02d', $year, $month, $day);
     }
 }
